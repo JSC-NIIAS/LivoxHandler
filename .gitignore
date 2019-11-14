@@ -1,0 +1,4 @@
+# Qt Build and temporary files and folders
+*build*
+*.user*
+*tmp*
