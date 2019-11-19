@@ -42,6 +42,9 @@ MAIN_DIR = $$PWD
 
 #========================================================================================
 
+SDK_DIR = $$PWD/livox_sdk
+include( $$PWD/sdk.pri )
+
 VLIBS_DIR = $$PWD/vlibs
 include( $$PWD/vlibs.pri )
 

@@ -21,8 +21,9 @@ public:
 
     struct receive
     {
+        std::string broadcast;
         std::string ip;
-        long int port;
+        int32_t     port;
 
     } receive;
 
@@ -46,8 +47,8 @@ public:
     struct main_params
     {
         std::string pid_path;
-        bool need_trace;
-        bool with_gui;
+        bool        need_trace;
+        bool        with_gui;
 
     } main_params;
 
@@ -74,6 +75,13 @@ private:
             //---------------------------------------------------------------------------
 
             sh.set_current_group( "receive" );
+
+            sh.append( "broadcast",
+                       &conf->receive.broadcast, "0TFDFCE00502151" );
+            sh.append( "ip",
+                       &conf->receive.ip, "192.168.150.230" );
+            sh.append( "port",
+                       &conf->receive.port, 50005 );
 
             //---------------------------------------------------------------------------
 

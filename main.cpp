@@ -14,6 +14,7 @@
 #include "vgit.h"
 
 #include "config.h"
+#include "lidar.h"
 
 using namespace std;
 
@@ -94,6 +95,31 @@ int main( int argc, char** argv )
     QCoreApplication qapp( argc, argv );
 
 #endif
+
+    // ----------------------------------------------------------------------------------
+
+    Lidar& read_lidar = Lidar::get_instance();
+
+    VecStr br_str = { config.receive.broadcast };
+
+    int ret = read_lidar.init_lidar( br_str );
+    if ( !ret )
+      vdeb << "Init lds lidar success!";
+
+    else
+      vwarning << "Init lds lidar fail!";
+
+    vdeb << "Start discovering device.\n";
+
+    read_lidar.deinit_lidar();
+
+    vdeb << "Livox lidar demo end!";
+
+    // ----------------------------------------------------------------------------------
+
+
+
+    // ----------------------------------------------------------------------------------
 
     return qapp.exec();
 }
