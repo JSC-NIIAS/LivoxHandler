@@ -1,9 +1,3 @@
 [submodule "livox_sdk"]
 	path = livox_sdk
 	url = ssh://git@bb.niias:7999/~d.leliuhin/livox_sdk.git
-[submodule "vlibs"]
-	path = vlibs
-	url = ssh://git@bb.niias:7999/elsd/vlibs.git
-[submodule "zcm_types"]
-	path = zcm_types
-	url = ssh://git@bb.niias:7999/ado/zcm_types.git
