@@ -1,3 +1,6 @@
 [submodule "vlibs2"]
 	path = vlibs2
 	url = ssh://git@bb.niias:7999/~elapidae/vlibs2.git
+[submodule "livox_sdk"]
+	path = livox_sdk
+	url = ssh://git@bb.niias:7999/ado/livox_sdk.git
