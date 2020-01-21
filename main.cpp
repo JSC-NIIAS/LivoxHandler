@@ -1,126 +1,116 @@
-#if WITH_GUI
-#include <QApplication>
-#else
-#include <QCoreApplication>
-#endif
+#include "vlivox_hunter.h"
 
-#include <iostream>
-
-#include <zcm/zcm-cpp.hpp>
-
-#include "vapplication.h"
 #include "vlog.h"
-#include "vfilelog.h"
-#include "vgit.h"
+#include "vbyte_buffer.h"
+#include "vbyte_buffer_view.h"
 
-#include "config.h"
-#include "lidar.h"
+#include <QApplication>
+#include <QUdpSocket>
+#include <QNetworkDatagram>
+
+#include <livox_sdk.h>
 
 using namespace std;
+using namespace livox;
 
 //=======================================================================================
 
-int main( int argc, char** argv )
+vbyte_buffer build_handshake_pk( uint32_t ip,
+                                 uint16_t data_port,
+                                 uint16_t cmd_port,
+                                 uint16_t sens_port )
 {
-    VApplication app( argc, argv );
-
-    VFileLog_Shared flog ( app.app_name() + ".log", 1e6, 3 );
-
-    flog.register_self();
-
-    //-----------------------------------------------------------------------------------
-
-    //  Print conf & exit
-
-    if ( app.args().has_flag( "--printconf" ) )
+    vbyte_buffer res;
     {
-        std::cout << Config::get() << std::endl;
-        return 0;
+        uint8_t sof = kSdkProtocolSof;
+        uint8_t version = livox::kSdkVer0;
+        uint16_t length = sizeof(HandshakeRequest) + sizeof(livox::SdkPacket) - 1 + kSdkPacketCrcSize;
+        uint8_t packet_type = livox::kCommandTypeAck;
+        uint16_t seq_num = 2;
+        res.append( sof );
+        res.append( version );
+        res.append_LE( length );
+        res.append( packet_type );
+        res.append_LE( seq_num );
+        uint16_t preamble_crc = calc_crc16( res.str().c_str(), uint(res.str().size()) );
+        res.append_LE( preamble_crc );
     }
 
-    //-----------------------------------------------------------------------------------
+    uint8_t cmd_set = livox::kCommandSetGeneral;
+    uint8_t cmd_id = livox::kCommandIDGeneralHandshake;
+    res.append( cmd_set );
+    res.append( cmd_id );
+    res.append_BE( ip );
+    res.append_LE( data_port );
+    res.append_LE( cmd_port  );
+    res.append_LE( sens_port );
+    uint32_t crc = calc_crc32( res.str().c_str(), res.str().size() );
+    res.append_LE( crc );
 
-    // Print version & exit
+    return res;
+}
 
-    if ( app.args().has_flag( "--version" ) || app.args().has_flag( "-V" ) )
-    {
-        std::cout << "\n\n" << VGit::as_message() << "\n\n";
+//=======================================================================================
 
-        return 0;
-    }
+int main( int argc, char **argv )
+{
+    vbyte_buffer ip_addr;
 
-    //-----------------------------------------------------------------------------------
+    ip_addr.append( uchar(192) );
+    ip_addr.append( uchar(168) );
+    ip_addr.append( uchar(150) );
+    ip_addr.append( uchar(240)  );
 
-    if ( app.args().has_flag( "--vgit" ) )
-        std::cout << "\n\n" << VGit::as_message() << "\n\n";
-
-    //-----------------------------------------------------------------------------------
-
-    //  Reading config
-
-    if ( !app.args().has_flag("-c") )
-        vwarning << "Cannot find param '-c' configname, using default (%).";
-
-    auto confname = app.args().take_std_value_or( "-c", "%" );
-
-    if ( confname == "%" )
-        confname = app.full_app_name() + ".conf";
-
-    auto config = Config::load( confname );
-
-    //-----------------------------------------------------------------------------------
-
-    //  Storing PID into filename
-
-    {
-        if ( !app.args().has_flag( "-p" ) )
-            vwarning << "Cannot find param '-p' pidname, using default (%).";
-
-        auto pidname = app.args().take_std_value_or( "-p", "%" );
-
-        if ( pidname == "%" )
-            pidname = app.app_name() + ".pid";
-
-        app.pid().store( config.main_params.pid_path, pidname );
-    }
-
-    // ----------------------------------------------------------------------------------
-
-#if WITH_GUI
+//    vdeb.hex() << ip_addr.view().u32_BE();
+//    return 0;
 
     QApplication qapp( argc, argv );
 
-#else
+    //---------------------------------------------------------------
 
-    QCoreApplication qapp( argc, argv );
+    VLivox_Hunter hunter( "0TFDFG700602211", "195.168.150.240" );
 
-#endif
+    QObject::connect( &hunter,
+                      &VLivox_Hunter::receive,
+                      [&]( const Info& info )
+    {
+        vdeb << info.str();
 
-    // ----------------------------------------------------------------------------------
+        QUdpSocket cmd;
+        QUdpSocket data;
 
-    Lidar& read_lidar = Lidar::get_instance();
+        Q_ASSERT( data.bind( 56001 ) );
+        Q_ASSERT( cmd.bind( 55501 ) );
 
-    VecStr br_str = { config.receive.broadcast };
+        auto pk = build_handshake_pk( 0xc0a896f0,
+                                      data.localPort(),
+                                      cmd.localPort(),
+                                      data.localPort() );
 
-    int ret = read_lidar.init_lidar( br_str );
-    if ( !ret )
-      vdeb << "Init lds lidar success!";
+        cmd.writeDatagram( pk.str().c_str(),
+                           pk.str().size(),
+                           info.address,
+                           info.port );
 
-    else
-      vwarning << "Init lds lidar fail!";
+        QObject::connect( &data,
+                          &QUdpSocket::readyRead,
+                          []()
+        {
+            vdeb << "gotcha!";
+        } );
 
-    vdeb << "Start discovering device.\n";
-
-    read_lidar.deinit_lidar();
-
-    vdeb << "Livox lidar demo end!";
-
-    // ----------------------------------------------------------------------------------
-
-
-
-    // ----------------------------------------------------------------------------------
+        QObject::connect( &cmd,
+                          &QUdpSocket::readyRead,
+                          [&](  )
+        {
+            vdeb << "gotcha!" << cmd.localPort();
+            auto dgram = cmd.receiveDatagram();
+            vdeb << dgram.data().toHex(' ');
+        } );
+    });
 
     return qapp.exec();
+
+    vdeb << build_handshake_pk( 0xc0a896f0, 56001, 55501, 56001 ).to_Hex('_');
 }
 //=======================================================================================

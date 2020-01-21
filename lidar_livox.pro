@@ -4,14 +4,14 @@ TARGET = lidar_livox
 
 #========================================================================================
 
-DEFINES += WITH_GUI="true"
+DEFINES += WITH_GUI
 
 #========================================================================================
 
 QT += core
-QT -= gui declarative
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT -= gui
+QT += widgets
+QT += network
 
 #========================================================================================
 
@@ -26,35 +26,25 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 #========================================================================================
 
-ZCM_Dir = /usr/local
-INCLUDEPATH += $$ZCM_Dir/include/
-LIBS += -L$$ZCM_Dir/lib -lzcm
-
-ZCM_TYPES_Dir = $$PWD/zcm_types
-INCLUDEPATH += $$ZCM_TYPES_Dir/service/cpp_types/
-LIBS += -L$$ZCM_TYPES_Dir -lzcmtypes
-
-#========================================================================================s
-
-SOURCES += main.cpp 
-
-MAIN_DIR = $$PWD
-
-#========================================================================================
-
 SDK_DIR = $$PWD/livox_sdk
+include( $$SDK_DIR/sdk_core/sdk_core.pri )
 include( $$PWD/sdk.pri )
 
-VLIBS_DIR = $$PWD/vlibs
+VLIBS_DIR = $$PWD/vlibs2
 include( $$PWD/vlibs.pri )
-
-config_reader_dir = $$PWD/config_reader
-INCLUDEPATH += $$config_reader_dir
-include( $$config_reader_dir/config_reader.pri )
 
 #========================================================================================
 
-DISTFILES += cfg/lidar_livox.cfg
+SOURCES += main.cpp
+
+#========================================================================================
+
+#include( $$PWD/config_reader/config_reader.pri )
+#include( $$PWD/lidar/lidar.pri )
+
+#========================================================================================
+
+OTHER_FILES += cfg/lidar_livox.cfg
 
 #========================================================================================
 
