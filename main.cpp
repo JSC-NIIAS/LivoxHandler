@@ -10,6 +10,8 @@
 
 #include <livox_sdk.h>
 
+#include <QNetworkInterface>
+
 using namespace std;
 using namespace livox;
 
@@ -95,7 +97,7 @@ int main( int argc, char **argv )
     ip_addr.append( uchar(192) );
     ip_addr.append( uchar(168) );
     ip_addr.append( uchar(150) );
-    ip_addr.append( uchar(240)  );
+    ip_addr.append( uchar(78)  );
 
     vdeb.hex() << ip_addr.view().u32_BE();
     //    return 0;
@@ -107,6 +109,8 @@ int main( int argc, char **argv )
     VLivox_Hunter hunter( "0TFDFG700602211", "195.168.150.240" );
 
     QUdpSocket *cmd = nullptr, *data = nullptr, *sens = nullptr;
+
+    auto local_ip = QHostAddress( uint32_t( ip_addr.view().u32_BE() ) );
 
     QObject::connect( &hunter,
                       &VLivox_Hunter::receive,
@@ -126,7 +130,7 @@ int main( int argc, char **argv )
         auto sens_port = sens->localPort();
 
         // Заполнение request пакета
-        auto pk = build_handshake_pk( 0xc0a896f0,
+        auto pk = build_handshake_pk( local_ip.toIPv4Address(),
                                       data_port,
                                       cmd_port,
                                       sens_port );
@@ -134,25 +138,23 @@ int main( int argc, char **argv )
         vdeb << "Handshake buffer: " << pk.to_Hex();
 
         cmd->writeDatagram( pk.str().c_str(),
-                            pk.str().size(),
-                            info.address,
-                            cmd_port ); // Вот здесь возможно неправильный порт указан, хотя какая разница какой, главное не 55000 или 65000
+                            pk.size(),
+                            local_ip,
+                            data_port ); // Вот здесь возможно неправильный порт указан, хотя какая разница какой, главное не 55000 или 65000
 
         // Реакция на получение ACK от сенсора
         QObject::connect( data,
                           &QUdpSocket::readyRead,
                           [&]()
         {
-            vdeb << "gotcha!";
+            vdeb << "Handshake successful!";
         } );
 
         QObject::connect( cmd,
                           &QUdpSocket::readyRead,
                           [&]()
         {
-            vdeb << "gotcha!" << cmd_port;
-            auto dgram = cmd->receiveDatagram();
-            vdeb << dgram.data().toHex(' ');
+            vdeb << "Heartbeated successful!";
         } );
     });
 
