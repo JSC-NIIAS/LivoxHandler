@@ -125,8 +125,10 @@ int main( int argc, char **argv )
 
     QTimer heart_timer;
 
+    //-----------------------------------------------------------------------------------
+
     QObject::connect( &hunter,
-                      &VLivox_Hunter::receive,
+                      &VLivox_Hunter::msg,
                       [&]( const Info& info )
     {
         vdeb << info.str();
@@ -140,8 +142,9 @@ int main( int argc, char **argv )
         cmd->writeDatagram( pk.str().c_str(),
                             pk.size(),
                             local_ip,
-                            data_port ); // Вот здесь возможно неправильный порт указан, хотя какая разница какой, главное не 55000 или 65000
+                            local_data_port ); //data_port ); // Вот здесь возможно неправильный порт указан, хотя какая разница какой, главное не 55000 или 65000
 
+        /*
         // Реакция на получение ACK от сенсора
         QObject::connect( data,
                           &QUdpSocket::readyRead,
@@ -189,15 +192,14 @@ int main( int argc, char **argv )
                 hunter.~VLivox_Hunter();
             }
         } );
+        */
     });
+
+    //-----------------------------------------------------------------------------------
 
     QObject::connect( &hunter,&VLivox_Hunter::heartbeat,
                       [&]()
     {
-        data = new QUdpSocket;
-        Q_ASSERT( data->bind() );
-        data_port = data->localPort();
-
         QObject::connect( &heart_timer,
                           &QTimer::timeout,
                           [&]()
@@ -212,7 +214,7 @@ int main( int argc, char **argv )
             cmd->writeDatagram( pk.str().c_str(),
                                 pk.size(),
                                 local_ip,
-                                data_port );
+                                local_data_port );
         } );
 
         QObject::connect( data,
@@ -242,8 +244,9 @@ int main( int argc, char **argv )
                 res.sdk.cmd_set = view.u8();
                 res.sdk.cmd_id = view.u8();
 
-                //            res.broadcast_code = view.string( kBroadcastCodeSize );
-                //            res.broadcast_code.pop_back(); // kill zero.
+//            res.broadcast_code = view.string( kBroadcastCodeSize );
+//            res.broadcast_code.pop_back(); // kill zero.
+
                 res.dev_type = view.u8();
                 view.omit(2);
                 auto crc = view.u32_LE();
@@ -256,6 +259,8 @@ int main( int argc, char **argv )
             }
         } );
     } );
+
+    //-----------------------------------------------------------------------------------
 
     return qapp.exec();
 }
