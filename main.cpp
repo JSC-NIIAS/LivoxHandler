@@ -17,16 +17,15 @@ using namespace livox;
 
 //=======================================================================================
 
-vbyte_buffer default_buffer()
+vbyte_buffer default_buffer( const uint16_t length )
 {
     vbyte_buffer res;
 
     uint8_t sof = kSdkProtocolSof;
     uint8_t version = livox::kSdkVer0;
-    uint16_t length = sizeof( HandshakeRequest ) +
-                      sizeof( livox::SdkPacket ) - 1 + kSdkPacketCrcSize;
-    uint8_t packet_type = livox::kCommandTypeCmd;
+    uint8_t packet_type = livox::kCommandTypeAck;
     uint16_t seq_num = 2;
+
     res.append( sof );
     res.append( version );
     res.append_LE( length );
@@ -45,7 +44,8 @@ vbyte_buffer build_handshake_pk( uint32_t ip,
                                  uint16_t cmd_port,
                                  uint16_t sens_port )
 {
-    vbyte_buffer res = default_buffer();
+    vbyte_buffer res = default_buffer( sizeof( HandshakeRequest ) +
+                                       sizeof( livox::SdkPacket ) - 1 + kSdkPacketCrcSize );
 
     uint8_t cmd_set = livox::kCommandSetGeneral;
     uint8_t cmd_id = livox::kCommandIDGeneralHandshake;
@@ -70,7 +70,7 @@ vbyte_buffer build_heartbeat_pk( uint32_t ip,
                                  uint16_t cmd_port,
                                  uint16_t sens_port )
 {
-    vbyte_buffer res = default_buffer();
+    vbyte_buffer res = default_buffer( sizeof( livox::SdkPacket ) - 1 + kSdkPacketCrcSize );
 
     uint8_t cmd_set = livox::kCommandSetGeneral;
     uint8_t cmd_id = livox::kCommandIDGeneralHeartbeat;
@@ -112,30 +112,30 @@ int main( int argc, char **argv )
 
     auto local_ip = QHostAddress( uint32_t( ip_addr.view().u32_BE() ) );
 
+    data = new QUdpSocket;
+    Q_ASSERT( data->bind() );
+    cmd = new QUdpSocket;
+    Q_ASSERT( cmd->bind() );
+    sens = new QUdpSocket;
+    Q_ASSERT( sens->bind() );
+
+    auto data_port = data->localPort();
+    auto cmd_port = cmd->localPort();
+    auto sens_port = sens->localPort();
+
+    QTimer heart_timer;
+
     QObject::connect( &hunter,
                       &VLivox_Hunter::receive,
                       [&]( const Info& info )
     {
         vdeb << info.str();
 
-        data = new QUdpSocket;
-        Q_ASSERT( data->bind() );
-        cmd = new QUdpSocket;
-        Q_ASSERT( cmd->bind() );
-        sens = new QUdpSocket;
-        Q_ASSERT( sens->bind() );
-
-        auto data_port = data->localPort();
-        auto cmd_port = cmd->localPort();
-        auto sens_port = sens->localPort();
-
         // Заполнение request пакета
         auto pk = build_handshake_pk( local_ip.toIPv4Address(),
                                       data_port,
                                       cmd_port,
                                       sens_port );
-
-        vdeb << "Handshake buffer: " << pk.to_Hex();
 
         cmd->writeDatagram( pk.str().c_str(),
                             pk.size(),
@@ -147,19 +147,116 @@ int main( int argc, char **argv )
                           &QUdpSocket::readyRead,
                           [&]()
         {
-            vdeb << "Handshake successful!";
-        } );
+            if ( data->hasPendingDatagrams() )
+            {
+                auto dgram = data->receiveDatagram();
 
-        QObject::connect( cmd,
-                          &QUdpSocket::readyRead,
-                          [&]()
-        {
-            vdeb << "Heartbeated successful!";
+                Info res;
+
+                res.address = local_ip;
+
+                res.port = data_port;
+
+                auto ba_data = dgram.data();
+                vbyte_buffer_view view( ba_data.data(), uint( ba_data.size() ) );
+
+                res.sdk.sof = view.u8();
+                res.sdk.version = view.u8();
+                res.sdk.length = view.u16_LE();
+                res.sdk.packet_type = view.u8();
+                res.sdk.seq_num = view.u16_LE();
+                res.sdk.preamble_crc = view.u16_LE();
+                (void) res.sdk.preamble_crc;
+                res.sdk.cmd_set = view.u8();
+                res.sdk.cmd_id = view.u8();
+
+                //            res.broadcast_code = view.string( kBroadcastCodeSize );
+                //            res.broadcast_code.pop_back(); // kill zero.
+                res.dev_type = view.u8();
+                view.omit(2);
+                auto crc = view.u32_LE();
+
+                //            assert( view.finished() );
+
+                vdeb << "Handshake successful!";
+
+                vdeb << res.str();
+
+                data->disconnect();
+                heart_timer.start( 800 );
+                hunter.emit_heartbeat();
+                hunter.disconnect();
+                hunter.~VLivox_Hunter();
+            }
         } );
     });
 
-    return qapp.exec();
+    QObject::connect( &hunter,&VLivox_Hunter::heartbeat,
+                      [&]()
+    {
+        data = new QUdpSocket;
+        Q_ASSERT( data->bind() );
+        data_port = data->localPort();
 
-//    vdeb << build_handshake_pk( 0xc0a896f0, 56001, 55501, 56001 ).to_Hex('_');
+        QObject::connect( &heart_timer,
+                          &QTimer::timeout,
+                          [&]()
+        {
+            vdeb << "Send heartbeat.";
+
+            auto pk = build_heartbeat_pk( local_ip.toIPv4Address(),
+                                          data_port,
+                                          cmd_port,
+                                          sens_port );
+
+            cmd->writeDatagram( pk.str().c_str(),
+                                pk.size(),
+                                local_ip,
+                                data_port );
+        } );
+
+        QObject::connect( data,
+                          &QUdpSocket::readyRead,
+                          [&]()
+        {
+            if ( data->hasPendingDatagrams() )
+            {
+                auto dgram = data->receiveDatagram();
+
+                Info res;
+
+                res.address = local_ip;
+
+                res.port = data_port;
+
+                auto ba_data = dgram.data();
+                vbyte_buffer_view view( ba_data.data(), uint( ba_data.size() ) );
+
+                res.sdk.sof = view.u8();
+                res.sdk.version = view.u8();
+                res.sdk.length = view.u16_LE();
+                res.sdk.packet_type = view.u8();
+                res.sdk.seq_num = view.u16_LE();
+                res.sdk.preamble_crc = view.u16_LE();
+                (void) res.sdk.preamble_crc;
+                res.sdk.cmd_set = view.u8();
+                res.sdk.cmd_id = view.u8();
+
+                //            res.broadcast_code = view.string( kBroadcastCodeSize );
+                //            res.broadcast_code.pop_back(); // kill zero.
+                res.dev_type = view.u8();
+                view.omit(2);
+                auto crc = view.u32_LE();
+
+                //            assert( view.finished() );
+
+                vdeb << "Heartbeat successful!";
+
+                vdeb << res.str();
+            }
+        } );
+    } );
+
+    return qapp.exec();
 }
 //=======================================================================================
