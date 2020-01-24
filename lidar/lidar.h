@@ -18,6 +18,8 @@
 
 class Lidar : public QObject
 {
+    Q_OBJECT
+
 public:
 
     explicit Lidar( QObject* parent = nullptr );
@@ -25,6 +27,10 @@ public:
     //-----------------------------------------------------------------------------------
 
 signals:
+
+    void handshake();
+
+    void heartbeat();
 
     //-----------------------------------------------------------------------------------
 
@@ -35,6 +41,9 @@ private:
 
     QTimer *_heart_timer = nullptr;
 
+    QHostAddress *_host_ip = nullptr;
+    QHostAddress *_livox_ip = nullptr;
+
     static uint16_t _seq_num;
 
     //-----------------------------------------------------------------------------------
@@ -43,6 +52,10 @@ private slots:
 
     void _on_broadcast();
 
+    void _on_handshake();
+    void _to_handshake();
+
+    void _to_heartbeat();
 };
 
 //=======================================================================================

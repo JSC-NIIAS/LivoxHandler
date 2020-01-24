@@ -49,6 +49,8 @@ static bool check_crc16( const char* buf, uint len )
 }
 //=======================================================================================
 
+
+#pragma pack(1)
 //=======================================================================================
 
 struct Cmd
@@ -61,6 +63,11 @@ struct Cmd
           cmd_id  ( id )
     {
 
+    }
+
+    uint16_t size() const
+    {
+        return sizeof ( Cmd );
     }
 
     void decode( vbyte_buffer_view* view )
@@ -144,17 +151,22 @@ struct CmdHandshake
     uint16_t imu_port;
 
     CmdHandshake( const Cmd& cmd = {},
-                  const uint32_t ip = {},
-                  const uint16_t data_p = {},
-                  const uint16_t cmd_p = {},
-                  const uint16_t imu_p = {} )
-        : cmd       ( cmd    )
-        , user_ip   ( ip     )
-        , data_port ( data_p )
-        , cmd_port  ( cmd_p  )
-        , imu_port  ( imu_p  )
+                  const uint32_t user_ip = {},
+                  const uint16_t data_port = {},
+                  const uint16_t cmd_port = {},
+                  const uint16_t imu_port = {} )
+        : cmd       ( cmd       )
+        , user_ip   ( user_ip   )
+        , data_port ( data_port )
+        , cmd_port  ( cmd_port  )
+        , imu_port  ( imu_port  )
     {
 
+    }
+
+    uint16_t size() const
+    {   //Хрен знает как посчитано, взял из sdk.
+        return 15;
     }
 
     void decode( vbyte_buffer_view* view )
@@ -205,6 +217,12 @@ struct AckHandshake
         buf.append( ret_code );
 
         return buf;
+    }
+
+    std::string cat()
+    {
+        return vcat( " | Cmd: ", cmd.cat(),
+                     " | ret_code: ", int( ret_code ) );
     }
 };
 
@@ -275,6 +293,11 @@ struct CmdHeartbeat
         : cmd ( cmd )
     {
 
+    }
+
+    uint16_t size() const
+    {   //Хрен знает как посчитано, взял из sdk.
+        return 15;
     }
 
     void decode( vbyte_buffer_view* view )
@@ -469,19 +492,33 @@ struct Frame
            const uint16_t length = {},
            const uint8_t cmd_type = {},
            const uint16_t seq_num = {},
-           const uint16_t crc_16 = {},
-           const T& cmd = {},
-           const uint32_t crc_32 = {} )
+           const T& command = {} )
         : sof      ( sof      )
         , version  ( version  )
         , length   ( length   )
         , cmd_type ( cmd_type )
         , seq_num  ( seq_num  )
-        , crc_16   ( crc_16   )
-        , cmd      ( cmd      )
-        , crc_32   ( crc_32   )
+        , cmd      ( command  )
     {
+        vbyte_buffer buf;
 
+        buf.append( sof );
+        buf.append( version );
+        buf.append_LE( length );
+        buf.append( cmd_type );
+        buf.append_LE( seq_num );
+
+        crc_16 = calc_crc16( buf.str().c_str(), uint( buf.size() ) );
+
+        buf.append_LE( crc_16 );
+        buf.append( cmd.encode() );
+
+        crc_32 = calc_crc32( buf.str().c_str(), uint( buf.size() ) );
+    }
+
+    uint16_t size() const
+    {
+        return sizeof ( Frame );
     }
 
     void decode( vbyte_buffer_view* view )
@@ -494,7 +531,7 @@ struct Frame
         crc_16 = view->u16_LE();
         (void) crc_16;
         cmd.decode( view );
-//        view.omit(2);
+        //        view.omit(2);
         crc_32 = view->u32_LE();
         assert( view->finished() );
     }
@@ -506,6 +543,8 @@ struct Frame
         buf.append( sof );
         buf.append( version );
         buf.append_LE( length );
+        buf.append( cmd_type );
+        buf.append( cmd_type );
         buf.append_LE( calc_crc16( buf.str().c_str(), uint( buf.str().size() ) ) );
         buf.append( cmd.encode() );
         buf.append_LE( calc_crc32( buf.str().c_str(), buf.str().size() ) );
@@ -527,6 +566,7 @@ struct Frame
 };
 
 //=======================================================================================
+#pragma pack()
 
 enum
 {
