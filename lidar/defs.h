@@ -21,7 +21,7 @@ static constexpr quint32 seed_32 = 0x564f580a;
 static constexpr auto heartbeat_ms = 800;
 
 //=======================================================================================
-static uint16_t calc_crc16( const char* buf, uint len )
+static uint16_t calc_crc16( const char* buf, size_t len )
 {
     static FastCRC16 fast_crc16 { seed_16 };
 
@@ -30,7 +30,7 @@ static uint16_t calc_crc16( const char* buf, uint len )
     return fast_crc16.mcrf4xx_calc( ptr, uint16_t( len ) );
 }
 //=======================================================================================
-static uint32_t calc_crc32( const char* buf, uint len )
+static uint32_t calc_crc32( const char* buf, size_t len )
 {
     static FastCRC32 fast_crc32 { seed_32 };
 
@@ -50,9 +50,7 @@ static bool check_crc16( const char* buf, uint len )
 //=======================================================================================
 
 
-#pragma pack(1)
 //=======================================================================================
-
 struct Cmd
 {
     uint8_t cmd_set;
@@ -113,7 +111,7 @@ struct BroabcastMessage
 
     void decode( vbyte_buffer_view* view )
     {
-        cmd.decode( view );
+        //cmd.decode( view );
         broadcast_code = view->string( kBroadcastCodeSize );
         broadcast_code.pop_back(); // kill zero.
         dev_type = view->u8();
@@ -144,52 +142,40 @@ struct BroabcastMessage
 
 struct CmdHandshake
 {
-    Cmd cmd;
+    static constexpr uint8_t cmd_set = livox::kCommandSetGeneral;
+    static constexpr uint8_t cmd_id  = livox::kCommandIDGeneralHandshake;
+
     uint32_t user_ip;
     uint16_t data_port;
     uint16_t cmd_port;
     uint16_t imu_port;
 
-    CmdHandshake( const Cmd& cmd = {},
-                  const uint32_t user_ip = {},
-                  const uint16_t data_port = {},
-                  const uint16_t cmd_port = {},
-                  const uint16_t imu_port = {} )
-        : cmd       ( cmd       )
-        , user_ip   ( user_ip   )
-        , data_port ( data_port )
-        , cmd_port  ( cmd_port  )
-        , imu_port  ( imu_port  )
-    {
-
-    }
-
-    uint16_t size() const
+    static uint16_t length()
     {   //Хрен знает как посчитано, взял из sdk.
-        return 15;
+        //return 10;
+        return sizeof( user_ip   ) +
+               sizeof( data_port ) * 3;
     }
 
-    void decode( vbyte_buffer_view* view )
+//    void decode( vbyte_buffer_view* view )
+//    {
+//        //cmd.decode( view );
+//        user_ip   = view->u32_LE();
+//        data_port = view->u16_LE();
+//        cmd_port  = view->u16_LE();
+//        imu_port  = view->u16_LE();
+//    }
+
+    void encode( vbyte_buffer* buf )
     {
-        cmd.decode( view );
-        user_ip = view->u32_LE();
-        data_port = view->u16_LE();
-        cmd_port = view->u16_LE();
-        imu_port = view->u16_LE();
-    }
-
-    vbyte_buffer encode()
-    {
-        vbyte_buffer buf = cmd.encode();
-
-        buf.append_LE( user_ip );
-        buf.append_LE( data_port );
-        buf.append_LE( cmd_port );
-        buf.append_LE( imu_port );
-
-        return buf;
+        buf->append_BE( user_ip   );
+        buf->append_LE( data_port );
+        buf->append_LE( cmd_port  );
+        buf->append_LE( imu_port  );
     }
 };
+
+//=======================================================================================
 
 struct AckHandshake
 {
@@ -310,6 +296,8 @@ struct CmdHeartbeat
         return cmd.encode();
     }
 };
+
+//=======================================================================================
 
 struct AckHeartbeat
 {
@@ -475,104 +463,110 @@ struct AckCoordinateSystem
 
 //=======================================================================================
 
+struct Head
+{
+    uint8_t  version;
+    uint8_t  cmd_type;
+    uint16_t seq_num;
+
+    uint8_t  cmd_set = -1;
+    uint8_t  cmd_id  = -1;
+
+
+};
+
 template <typename T>
 struct Frame
 {
-    uint8_t  sof;
     uint8_t  version;
-    uint16_t length;
     uint8_t  cmd_type;
     uint16_t seq_num;
-    uint16_t crc_16;
-    T        cmd;
-    uint32_t crc_32;
 
-    Frame( const uint8_t sof = {},
-           const uint8_t version = {},
-           const uint16_t length = {},
-           const uint8_t cmd_type = {},
-           const uint16_t seq_num = {},
-           const T& command = {} )
-        : sof      ( sof      )
-        , version  ( version  )
-        , length   ( length   )
-        , cmd_type ( cmd_type )
-        , seq_num  ( seq_num  )
-        , cmd      ( command  )
+    uint8_t  cmd_set = -1;
+    uint8_t  cmd_id  = -1;
+
+    T        data;
+    //uint32_t crc_32;
+
+    static uint16_t length()
     {
-        vbyte_buffer buf;
-
-        buf.append( sof );
-        buf.append( version );
-        buf.append_LE( length );
-        buf.append( cmd_type );
-        buf.append_LE( seq_num );
-
-        crc_16 = calc_crc16( buf.str().c_str(), uint( buf.size() ) );
-
-        buf.append_LE( crc_16 );
-        buf.append( cmd.encode() );
-
-        crc_32 = calc_crc32( buf.str().c_str(), uint( buf.size() ) );
+        return T::length() + 15;
     }
 
-    uint16_t size() const
+    bool decode( vbyte_buffer_view* view )
     {
-        return sizeof ( Frame );
-    }
+        auto sof = view->u8();
+        if ( sof != 0xAA ) return false;
 
-    void decode( vbyte_buffer_view* view )
-    {
-        sof = view->u8();
         version = view->u8();
-        length = view->u16_LE();
+        auto length = view->u16_LE();
+
         cmd_type = view->u8();
-        seq_num = view->u16_LE();
-        crc_16 = view->u16_LE();
-        (void) crc_16;
-        cmd.decode( view );
-        //        view.omit(2);
-        crc_32 = view->u32_LE();
+        seq_num  = view->u16_LE();
+
+        auto crc_16 = view->u16_LE();
+        (void) crc_16; // сделать проверку CRC16 head
+
+        cmd_set = view->u8();
+        cmd_id  = view->u8();
+
+        data.decode( view );
+
+        auto crc_32 = view->u32_LE();
+        (void)crc_32; // Проверить CRC32.
+
         assert( view->finished() );
+
+        return true;
     }
 
     vbyte_buffer encode()
     {
         vbyte_buffer buf;
 
-        buf.append( sof );
-        buf.append( version );
-        buf.append_LE( length );
-        buf.append( cmd_type );
-        buf.append( cmd_type );
-        buf.append_LE( calc_crc16( buf.str().c_str(), uint( buf.str().size() ) ) );
-        buf.append( cmd.encode() );
-        buf.append_LE( calc_crc32( buf.str().c_str(), buf.str().size() ) );
+        buf.append   ( uint8_t(0xAA) );
+        buf.append   ( version       );
+        buf.append_LE( length()      );
+        buf.append   ( cmd_type      );
+        buf.append_LE( seq_num       );
+
+        uint16_t crc16 = calc_crc16( buf.str().c_str(), buf.size() );
+        buf.append_LE( crc16 );
+
+        buf.append( T::cmd_set );
+        buf.append( T::cmd_id  );
+        data.encode( &buf );
+
+        uint32_t crc32 = calc_crc32( buf.str().c_str(), buf.str().size() );
+        buf.append_LE( crc32 );
 
         return buf;
     }
 
     std::string cat()
     {
-        return vcat( " | sof: ", int( sof ),
+        return vcat( //" | sof: ", int( sof ),
                      " | version: ", int( version ),
-                     " | length: ", int( length ),
+                     //" | length: ", length,
                      " | cmd_type: ", int( cmd_type ),
-                     " | seq_num: ", int( seq_num ),
-                     " | crc_16: ", int( crc_16 ),
-                     " | T: ", cmd.cat(),
-                     " | crc_32: ", int( crc_32 ) );
+                     " | seq_num: ", seq_num,
+                     //" | crc_16: ",  crc_16,
+                     " | T: ", data.cat()
+                     //" | crc_32: ", std::hex, crc_32
+                   );
+
     }
 };
 
 //=======================================================================================
-#pragma pack()
 
 enum
 {
-    host_data_port = 55000,
-    host_cmd_port = 56000,
-    host_imu_port = 55500,
+    host_bcast_port = 55000,
+    host_data_port  = 56001,
+    host_cmd_port   = 55501,
+    host_imu_port   = 56001,
+
     livox_port = 65000
 };
 

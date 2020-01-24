@@ -26,23 +26,16 @@ public:
 
     //-----------------------------------------------------------------------------------
 
-signals:
-
-    void handshake();
-
-    void heartbeat();
-
-    //-----------------------------------------------------------------------------------
-
 private:
 
+    QUdpSocket *_sock_listener = nullptr;
     QUdpSocket *_sock_data = nullptr;
     QUdpSocket *_sock_cmd = nullptr;
 
     QTimer *_heart_timer = nullptr;
 
-    QHostAddress *_host_ip = nullptr;
-    QHostAddress *_livox_ip = nullptr;
+    QHostAddress _host_ip;
+    QHostAddress _livox_ip;
 
     static uint16_t _seq_num;
 
@@ -51,11 +44,13 @@ private:
 private slots:
 
     void _on_broadcast();
+    void _init_listen_ports();
 
-    void _on_handshake();
-    void _to_handshake();
+    void _send_handshake();
 
-    void _to_heartbeat();
+    void _on_command();
+    void _on_data();
+    void _send_heartbeat();
 };
 
 //=======================================================================================
