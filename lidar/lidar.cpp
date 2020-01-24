@@ -155,8 +155,8 @@ void Lidar::_to_handshake()
 
     auto status = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             dgram.size(),
-                                            *_host_ip,
-                                            host_cmd_port );
+                                            *_livox_ip,
+                                            livox_port );
     if ( status )
         vdeb << "Send Handshake Request";
 }
