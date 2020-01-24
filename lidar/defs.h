@@ -1,18 +1,53 @@
 #ifndef DEFS_H
 #define DEFS_H
 
+#include "vlog.h"
+#include "vcat.h"
 #include "vbyte_buffer.h"
 #include "vbyte_buffer_view.h"
 
 #include "livox_def.h"
 #include "command_impl.h"
+#include "sdk_protocol.h"
+
+#include <QtGlobal>
 
 #include <string>
 
 //=======================================================================================
 
-uint16_t calc_crc16( const char* buf, uint len );
-uint32_t calc_crc32( const char* buf, uint len );
+static constexpr quint32 seed_16 = 0x4c49;
+static constexpr quint32 seed_32 = 0x564f580a;
+static constexpr auto heartbeat_ms = 800;
+
+//=======================================================================================
+static uint16_t calc_crc16( const char* buf, uint len )
+{
+    static FastCRC16 fast_crc16 { seed_16 };
+
+    auto ptr = static_cast<const uchar*>( static_cast<const void*>( buf ) );
+
+    return fast_crc16.mcrf4xx_calc( ptr, uint16_t( len ) );
+}
+//=======================================================================================
+static uint32_t calc_crc32( const char* buf, uint len )
+{
+    static FastCRC32 fast_crc32 { seed_32 };
+
+    auto ptr = static_cast<const uchar*>( static_cast<const void*>( buf ) );
+
+    return fast_crc32.crc32_calc( ptr, uint16_t( len ) );
+}
+//=======================================================================================
+static bool check_crc16( const char* buf, uint len )
+{
+    static FastCRC16 fast_crc16 { seed_16 };
+
+    auto ptr = static_cast<const uchar*>( static_cast<const void*>( buf ) );
+
+    return fast_crc16.mcrf4xx_calc( ptr, uint16_t( len ) ) == 0;
+}
+//=======================================================================================
 
 //=======================================================================================
 
@@ -21,12 +56,17 @@ struct Cmd
     uint8_t cmd_set;
     uint8_t cmd_id;
 
-    Cmd( const uint8_t set, const uint8_t id ) : cmd_set ( set ) , cmd_id  ( id ) {}
-
-    void decode( vbyte_buffer_view& view )
+    Cmd( const uint8_t set = {}, const uint8_t id = {} )
+        : cmd_set ( set ) ,
+          cmd_id  ( id )
     {
-        cmd_set = view.u8();
-        cmd_id  = view.u8();
+
+    }
+
+    void decode( vbyte_buffer_view* view )
+    {
+        cmd_set = view->u8();
+        cmd_id  = view->u8();
     }
 
     vbyte_buffer encode()
@@ -37,6 +77,11 @@ struct Cmd
         buf.append( cmd_id );
 
         return buf;
+    }
+
+    std::string cat()
+    {
+        return vcat( " | cmd_set: ", int( cmd_set ), " | cmd_id: ", int( cmd_id ) );
     }
 };
 
@@ -49,7 +94,9 @@ struct BroabcastMessage
     uint8_t     dev_type;
     uint16_t    reserved;
 
-    BroabcastMessage( const Cmd& cmd, const std::string code, const uint8_t type )
+    BroabcastMessage( const Cmd& cmd = {},
+                      const std::string code = {},
+                      const uint8_t type = {} )
         : cmd            ( cmd  )
         , broadcast_code ( code )
         , dev_type       ( type )
@@ -57,13 +104,13 @@ struct BroabcastMessage
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
-        broadcast_code = view.string( kBroadcastCodeSize );
+        broadcast_code = view->string( kBroadcastCodeSize );
         broadcast_code.pop_back(); // kill zero.
-        dev_type = view.u8();
-        reserved = view.u16_LE();
+        dev_type = view->u8();
+        reserved = view->u16_LE();
     }
 
     vbyte_buffer encode()
@@ -75,6 +122,14 @@ struct BroabcastMessage
         buf.append_LE( reserved );
 
         return buf;
+    }
+
+    std::string cat()
+    {
+        return vcat( " | Cmd: ", cmd.cat(),
+                     " | broadcast_code: ", broadcast_code,
+                     " | dev_type: ", int( dev_type ),
+                     " | reserved: ", int(reserved) );
     }
 };
 
@@ -88,11 +143,11 @@ struct CmdHandshake
     uint16_t cmd_port;
     uint16_t imu_port;
 
-    CmdHandshake( const Cmd& cmd,
-                  const uint32_t ip,
-                  const uint16_t data_p,
-                  const uint16_t cmd_p,
-                  const uint16_t imu_p )
+    CmdHandshake( const Cmd& cmd = {},
+                  const uint32_t ip = {},
+                  const uint16_t data_p = {},
+                  const uint16_t cmd_p = {},
+                  const uint16_t imu_p = {} )
         : cmd       ( cmd    )
         , user_ip   ( ip     )
         , data_port ( data_p )
@@ -102,13 +157,13 @@ struct CmdHandshake
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
-        user_ip = view.u32_LE();
-        data_port = view.u16_LE();
-        cmd_port = view.u16_LE();
-        imu_port = view.u16_LE();
+        user_ip = view->u32_LE();
+        data_port = view->u16_LE();
+        cmd_port = view->u16_LE();
+        imu_port = view->u16_LE();
     }
 
     vbyte_buffer encode()
@@ -129,18 +184,18 @@ struct AckHandshake
     Cmd     cmd;
     uint8_t ret_code;
 
-    AckHandshake( const Cmd& cmd,
-                  const uint8_t code )
+    AckHandshake( const Cmd& cmd = {},
+                  const uint8_t code = {} )
         : cmd      ( cmd  )
         , ret_code ( code )
     {
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
-        ret_code = view.u8();
+        ret_code = view->u8();
     }
 
     vbyte_buffer encode()
@@ -159,13 +214,13 @@ struct CmdQueryDeviceInfo
 {
     Cmd cmd;
 
-    CmdQueryDeviceInfo( const Cmd& cmd )
+    CmdQueryDeviceInfo( const Cmd& cmd = {} )
         : cmd ( cmd )
     {
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
     }
@@ -182,7 +237,9 @@ struct AckQueryDeviceInfo
     uint8_t  ret_code;
     uint32_t version;
 
-    AckQueryDeviceInfo( const Cmd& cmd, const uint8_t code, const uint32_t version )
+    AckQueryDeviceInfo( const Cmd& cmd = {},
+                        const uint8_t code = {},
+                        const uint32_t version = {} )
         : cmd      ( cmd     )
         , ret_code ( code    )
         , version  ( version )
@@ -190,11 +247,11 @@ struct AckQueryDeviceInfo
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
-        ret_code = view.u8();
-        version = view.u32_LE();
+        ret_code = view->u8();
+        version = view->u32_LE();
     }
 
     vbyte_buffer encode()
@@ -214,13 +271,13 @@ struct CmdHeartbeat
 {
     Cmd cmd;
 
-    CmdHeartbeat( const Cmd& cmd )
+    CmdHeartbeat( const Cmd& cmd = {} )
         : cmd ( cmd )
     {
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
     }
@@ -239,11 +296,11 @@ struct AckHeartbeat
     uint8_t  feature_msg;
     uint32_t ack_msg;
 
-    AckHeartbeat( const Cmd& cmd,
-                  const uint8_t code,
-                  const uint8_t state,
-                  const uint8_t fmsg,
-                  const uint32_t amsg )
+    AckHeartbeat( const Cmd& cmd = {},
+                  const uint8_t code = {},
+                  const uint8_t state = {},
+                  const uint8_t fmsg = {},
+                  const uint32_t amsg = {} )
         : cmd         ( cmd   )
         , ret_code    ( code  )
         , work_state  ( state )
@@ -253,13 +310,13 @@ struct AckHeartbeat
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
-        ret_code = view.u8();
-        work_state = view.u8();
-        feature_msg = view.u8();
-        ack_msg = view.u8();
+        ret_code = view->u8();
+        work_state = view->u8();
+        feature_msg = view->u8();
+        ack_msg = view->u8();
     }
 
     vbyte_buffer encode()
@@ -282,17 +339,19 @@ struct CmdSampling
     Cmd     cmd;
     uint8_t sampling_ctrl;
 
-    CmdSampling( const Cmd& cmd, const uint8_t ctrl )
+    CmdSampling();
+
+    CmdSampling( const Cmd& cmd = {}, const uint8_t ctrl = {} )
         : cmd           ( cmd  )
         , sampling_ctrl ( ctrl )
     {
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
-        sampling_ctrl = view.u8();
+        sampling_ctrl = view->u8();
     }
 
     vbyte_buffer encode()
@@ -310,17 +369,17 @@ struct AckSampling
     Cmd      cmd;
     uint8_t  ret_code;
 
-    AckSampling( const Cmd& cmd, const uint8_t code )
+    AckSampling( const Cmd& cmd = {}, const uint8_t code = {} )
         : cmd      ( cmd  )
         , ret_code ( code )
     {
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
-        ret_code = view.u8();
+        ret_code = view->u8();
     }
 
     vbyte_buffer encode()
@@ -340,17 +399,17 @@ struct CmdCoordinateSystem
     Cmd     cmd;
     uint8_t coordinate_type;
 
-    CmdCoordinateSystem( const Cmd& cmd, const uint8_t type )
+    CmdCoordinateSystem( const Cmd& cmd = {}, const uint8_t type = {} )
         : cmd             ( cmd  )
         , coordinate_type ( type )
     {
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
-        coordinate_type = view.u8();
+        coordinate_type = view->u8();
     }
 
     vbyte_buffer encode()
@@ -368,17 +427,17 @@ struct AckCoordinateSystem
     Cmd      cmd;
     uint8_t  ret_code;
 
-    AckCoordinateSystem( const Cmd& cmd, const uint8_t type )
+    AckCoordinateSystem( const Cmd& cmd = {}, const uint8_t type = {} )
         : cmd      ( cmd  )
         , ret_code ( type )
     {
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
         cmd.decode( view );
-        ret_code = view.u8();
+        ret_code = view->u8();
     }
 
     vbyte_buffer encode()
@@ -393,7 +452,7 @@ struct AckCoordinateSystem
 
 //=======================================================================================
 
-template <typename Command>
+template <typename T>
 struct Frame
 {
     uint8_t  sof;
@@ -402,17 +461,17 @@ struct Frame
     uint8_t  cmd_type;
     uint16_t seq_num;
     uint16_t crc_16;
-    Command  cmd;
+    T        cmd;
     uint32_t crc_32;
 
-    Frame( const uint8_t sof,
-           const uint8_t version,
-           const uint16_t length,
-           const uint8_t cmd_type,
-           const uint16_t seq_num,
-           const uint16_t crc_16,
-           const Command cmd,
-           const uint32_t crc_32 )
+    Frame( const uint8_t sof = {},
+           const uint8_t version = {},
+           const uint16_t length = {},
+           const uint8_t cmd_type = {},
+           const uint16_t seq_num = {},
+           const uint16_t crc_16 = {},
+           const T& cmd = {},
+           const uint32_t crc_32 = {} )
         : sof      ( sof      )
         , version  ( version  )
         , length   ( length   )
@@ -425,18 +484,19 @@ struct Frame
 
     }
 
-    void decode( vbyte_buffer_view& view )
+    void decode( vbyte_buffer_view* view )
     {
-        sof = view.u8();
-        version = view.u8();
-        length = view.u16_LE();
-        cmd_type = view.u8();
-        seq_num = view.u16_LE();
-        crc_16 = view.u16_LE();
+        sof = view->u8();
+        version = view->u8();
+        length = view->u16_LE();
+        cmd_type = view->u8();
+        seq_num = view->u16_LE();
+        crc_16 = view->u16_LE();
         (void) crc_16;
         cmd.decode( view );
 //        view.omit(2);
-        crc_32 = view.u32_LE();
+        crc_32 = view->u32_LE();
+        assert( view->finished() );
     }
 
     vbyte_buffer encode()
@@ -452,6 +512,30 @@ struct Frame
 
         return buf;
     }
+
+    std::string cat()
+    {
+        return vcat( " | sof: ", int( sof ),
+                     " | version: ", int( version ),
+                     " | length: ", int( length ),
+                     " | cmd_type: ", int( cmd_type ),
+                     " | seq_num: ", int( seq_num ),
+                     " | crc_16: ", int( crc_16 ),
+                     " | T: ", cmd.cat(),
+                     " | crc_32: ", int( crc_32 ) );
+    }
 };
+
+//=======================================================================================
+
+enum
+{
+    host_data_port = 55000,
+    host_cmd_port = 56000,
+    host_imu_port = 55500,
+    livox_port = 65000
+};
+
+//=======================================================================================
 
 #endif

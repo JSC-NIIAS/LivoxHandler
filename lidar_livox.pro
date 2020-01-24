@@ -28,7 +28,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SDK_DIR = $$PWD/livox_sdk
 include( $$SDK_DIR/sdk_core/sdk_core.pri )
-include( $$PWD/sdk.pri )
+#include( $$PWD/sdk.pri )
 
 VLIBS_DIR = $$PWD/vlibs2
 include( $$PWD/vlibs.pri )

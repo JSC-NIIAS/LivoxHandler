@@ -1,3 +1,6 @@
+#include "defs.h"
+#include "lidar.h"
+
 #include "vlog.h"
 #include "vbyte_buffer.h"
 #include "vbyte_buffer_view.h"
@@ -6,8 +9,6 @@
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 #include <QNetworkInterface>
-
-#include <livox_sdk.h>
 
 using namespace std;
 
@@ -26,6 +27,7 @@ int main( int argc, char **argv )
 
     QApplication qapp( argc, argv );
 
+    Lidar lidar;
 
     return qapp.exec();
 }
