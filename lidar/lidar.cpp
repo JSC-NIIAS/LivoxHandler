@@ -74,8 +74,8 @@ void Lidar::_on_broadcast()
             return;
         }
 
-//        if ( frame.sof != kSdkProtocolSof )
-//            throw verror << "sof != kSdkProtocolSof!";
+        //        if ( frame.sof != kSdkProtocolSof )
+        //            throw verror << "sof != kSdkProtocolSof!";
 
         if ( frame.data.cmd.cmd_set != kCommandSetGeneral )
             throw verror << "cmd_set != livox::kCommandSetGeneral";
@@ -97,10 +97,6 @@ void Lidar::_on_broadcast()
 //=======================================================================================
 void Lidar::_init_listen_ports()
 {
-    _heart_timer = new QTimer(this);
-    _heart_timer->start( heartbeat_ms );
-    connect( _heart_timer, &QTimer::timeout, this, &Lidar::_send_heartbeat );
-
     _sock_data = new QUdpSocket(this);
     _sock_cmd  = new QUdpSocket(this);
 
@@ -125,17 +121,18 @@ void Lidar::_send_handshake()
 {
     Cmd cmd( kCommandSetGeneral, kCommandIDGeneralHandshake );
 
-    Frame<CmdHandshake> frame;
+    Head head;
+    head.version  = kSdkVer0;
+    head.seq_num  = _seq_num++;
+    head.cmd_type = kCommandTypeAck;
 
-    frame.version  = kSdkVer0;
-    frame.seq_num  = _seq_num++;
+    CmdHandshake req;
+    req.user_ip   = _host_ip.toIPv4Address();
+    req.data_port = host_data_port;
+    req.cmd_port  = host_cmd_port;
+    req.imu_port  = host_imu_port;
 
-    frame.data.user_ip   = _host_ip.toIPv4Address();
-    frame.data.data_port = host_data_port;
-    frame.data.cmd_port  = host_cmd_port;
-    frame.data.imu_port  = host_imu_port;
-
-    auto dgram = frame.encode();
+    auto dgram = head.encode( req );
 
     auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             int(dgram.size()),
@@ -155,20 +152,58 @@ void Lidar::_on_command()
 
         vdeb << "Receive Handshake Response";
         vdeb << dgram.data().toHex(' ');
-        continue;
 
-//        auto address = dgram.senderAddress();
-//        auto port = dgram.senderPort();
+        auto address = dgram.senderAddress();
+        if (address != _livox_ip) continue;
+        //        auto port = dgram.senderPort();
 
-//        auto byte_data = dgram.data();
-//        vbyte_buffer_view view( byte_data.data(), uint( byte_data.size() ) );
+        auto byte_data = dgram.data();
+        uint32_t crc32;
+        vbyte_buffer buf;
+        {
+            vbyte_buffer b( dgram.data().toStdString() );
+            auto v = b.view();
+            buf = v.buffer( v.remained() - 4 );
+            crc32 = v.u32_LE();
+        }
+        auto ccrc32 = calc_crc32( buf.str().c_str(), buf.size() );
+        if (ccrc32 != crc32 )
+        {
+            vwarning << "CRC32";
+            continue;
+        }
 
-//        Frame<AckHandshake> frame;
-//        frame.decode( &view );
+        auto view = buf.view();
 
-//        vdeb << vcat( "Address: ", address.toString(), " | ",
-//                      " Port: ", port, " | ",
-//                      frame.cat() );
+        Head head;
+        auto ok = head.decode( &view );
+        if (!ok)
+        {
+            vwarning << "Bad packet";
+            continue;
+        }
+        //vdeb << head.str() << view.remained();
+
+        //        else if ( packet.cmd_set == kCommandSetGeneral &&
+        //                  packet.cmd_code == kCommandIDGeneralHandshake )
+
+        if (head.cmd_set == kCommandSetGeneral &&
+                head.cmd_id  == kCommandIDGeneralHandshake )
+        {
+            vdeb << "gotcha ack req";
+
+            _heart_timer = new QTimer(this);
+            _heart_timer->start( heartbeat_ms );
+            connect( _heart_timer, &QTimer::timeout, this, &Lidar::_send_heartbeat );
+        }
+
+
+        //        Frame<AckHandshake> frame;
+        //        frame.decode( &view );
+
+        //        vdeb << vcat( "Address: ", address.toString(), " | ",
+        //                      " Port: ", port, " | ",
+        //                      frame.cat() );
     }
 }
 //=======================================================================================
@@ -188,24 +223,28 @@ void Lidar::_on_data()
 //=======================================================================================
 void Lidar::_send_heartbeat()
 {
-    Cmd cmd( kCommandSetGeneral, kCommandIDGeneralHeartbeat );
+    Head head;
 
-    CmdHeartbeat cmd_heart( cmd );
+    head.version  = kSdkVer0;
+    head.cmd_type = kCommandTypeCmd;
+    head.seq_num  = _seq_num++;
 
-//    Frame<CmdHeartbeat> frame( kSdkProtocolSof,
-//                               kSdkVer0,
-//                               cmd_heart.size(),
-//                               kCommandTypeCmd,
-//                               _seq_num,
-//                               cmd_heart );
+    auto dgram = head.encode( HeartBeat2{} );
 
-//    auto dgram = frame.encode();
+    auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
+                                            int(dgram.size()),
+                                            _livox_ip,
+                                            livox_port );
+    if ( sended == int(dgram.size()) )
+        vdeb << "Send Heartbeat Request";
+    else
+        vwarning << "sended";
 
-//    auto status = _sock_cmd->writeDatagram( dgram.str().c_str(),
-//                                            int(dgram.size()),
-//                                            _host_ip,
-//                                            host_cmd_port );
-//    if ( status )
-//        vdeb << "Send Heartbeat Request";
+//    head.seq_num = _seq_num;
+//    dgram = head.encode( DevInfo{} );
+//    _sock_cmd->writeDatagram( dgram.str().c_str(),
+//                              int(dgram.size()),
+//                              _livox_ip,
+//                              livox_port );
 }
 //=======================================================================================

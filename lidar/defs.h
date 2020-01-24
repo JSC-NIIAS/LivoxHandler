@@ -166,7 +166,7 @@ struct CmdHandshake
 //        imu_port  = view->u16_LE();
 //    }
 
-    void encode( vbyte_buffer* buf )
+    void encode( vbyte_buffer* buf ) const
     {
         buf->append_BE( user_ip   );
         buf->append_LE( data_port );
@@ -463,16 +463,96 @@ struct AckCoordinateSystem
 
 //=======================================================================================
 
+struct HeartBeat2
+{
+    static constexpr uint8_t cmd_set = livox::kCommandSetGeneral;
+    static constexpr uint8_t cmd_id  = livox::kCommandIDGeneralHeartbeat;
+
+    static uint16_t length() { return 0; }
+
+    void encode( vbyte_buffer*) const {}
+};
+
+struct DevInfo
+{
+    static constexpr uint8_t cmd_set = livox::kCommandSetGeneral;
+    static constexpr uint8_t cmd_id  = livox::kCommandIDGeneralDeviceInfo;
+
+    static uint16_t length() { return 0; }
+
+    void encode( vbyte_buffer*) const {}
+};
+
+
 struct Head
 {
-    uint8_t  version;
+    //  Три поля выставляем на encode()
+    uint8_t  version = livox::kSdkVer0;
     uint8_t  cmd_type;
     uint16_t seq_num;
 
+    //  Три поля заполянются при decode()
     uint8_t  cmd_set = -1;
     uint8_t  cmd_id  = -1;
+    int      length  = -1;
 
+    std::string str() const
+    {
+        return vcat("Head(v:", int(version), ",t:", int(cmd_type),
+                          ",set:",int(cmd_set), ",id:", int(cmd_id), ",len:", length, ")" );
+    }
 
+    template<typename T>
+    vbyte_buffer encode( const T& data )
+    {
+        vbyte_buffer buf;
+
+        buf.append   ( uint8_t(0xAA) );
+        buf.append   ( version       );
+        buf.append_LE( uint16_t(T::length() + _heap_len()) );
+        buf.append   ( cmd_type      );
+        buf.append_LE( seq_num       );
+
+        uint16_t crc16 = calc_crc16( buf.str().c_str(), buf.size() );
+        buf.append_LE( crc16 );
+
+        buf.append( T::cmd_set );
+        buf.append( T::cmd_id  );
+
+        data.encode( &buf );
+
+        uint32_t crc32 = calc_crc32( buf.str().c_str(), buf.str().size() );
+        buf.append_LE( crc32 );
+
+        return buf;
+    }
+
+    bool decode( vbyte_buffer_view * view )
+    {
+        if ( view->remained() < _heap_len() - 4 ) return false;
+        auto for_crc = view->show_string( _heap_for_crc16() );
+        auto calc_crc = calc_crc16( for_crc.c_str(), _heap_for_crc16() );
+
+        auto sof = view->u8();
+        if ( sof != 0xAA ) return false;
+
+        version  = view->u8();
+        length   = view->u16_LE();
+        cmd_type = view->u8();
+        seq_num  = view->u16_LE();
+
+        auto crc = view->u16_LE();
+        if ( crc != calc_crc ) return false;
+
+        cmd_set = view->u8();
+        cmd_id  = view->u8();
+
+        return true;
+    }
+
+private:
+    static uint16_t _heap_len()       { return 15; }
+    static size_t   _heap_for_crc16() { return 7;  }
 };
 
 template <typename T>
@@ -482,8 +562,8 @@ struct Frame
     uint8_t  cmd_type;
     uint16_t seq_num;
 
-    uint8_t  cmd_set = -1;
-    uint8_t  cmd_id  = -1;
+    uint8_t  cmd_set = 0xFF;
+    uint8_t  cmd_id  = 0xFF;
 
     T        data;
     //uint32_t crc_32;
