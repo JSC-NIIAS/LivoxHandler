@@ -41,6 +41,7 @@ SOURCES += main.cpp
 
 #include( $$PWD/config_reader/config_reader.pri )
 include( $$PWD/lidar/lidar.pri )
+include( $$PWD/plot/plot.pri )
 
 #========================================================================================
 

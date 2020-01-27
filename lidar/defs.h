@@ -11,6 +11,7 @@
 #include "sdk_protocol.h"
 
 #include <QtGlobal>
+#include <QList>
 
 #include <string>
 
@@ -19,6 +20,7 @@
 static constexpr quint32 seed_16 = 0x4c49;
 static constexpr quint32 seed_32 = 0x564f580a;
 static constexpr auto heartbeat_ms = 800;
+static constexpr auto data_ms = 100;
 
 //=======================================================================================
 static uint16_t calc_crc16( const char* buf, size_t len )
@@ -473,6 +475,35 @@ struct HeartBeat2
     void encode( vbyte_buffer*) const {}
 };
 
+struct Sampling
+{
+    static constexpr uint8_t cmd_set = livox::kCommandSetGeneral;
+    static constexpr uint8_t cmd_id  = livox::kCommandIDGeneralControlSample;
+
+    uint8_t sample_ctrl;
+
+    static uint16_t length() { return 1; }
+
+    void encode( vbyte_buffer* buf) const
+    {
+        buf->append( sample_ctrl );
+    }
+};
+
+struct Mode
+{
+    static constexpr uint8_t cmd_set = livox::kCommandSetLidar;
+    static constexpr uint8_t cmd_id  = 0;
+    uint8_t lidar_mode = - 1;
+
+    static uint16_t length() { return 1; }
+
+    void encode( vbyte_buffer* buf) const
+    {
+        buf->append( lidar_mode );
+    }
+};
+
 struct DevInfo
 {
     static constexpr uint8_t cmd_set = livox::kCommandSetGeneral;
@@ -648,6 +679,97 @@ enum
     host_imu_port   = 56001,
 
     livox_port = 65000
+};
+
+//=======================================================================================
+
+typedef enum
+{
+    stop  = 0,
+    start = 1
+} LidarSample;
+
+//=======================================================================================
+
+// Point property based on spatial position
+struct PointSpatialPosition
+{
+    uint8_t normal    = 0x00; // Normal
+    uint8_t high_conf = 0x01; // High confidence level of the noise
+    uint8_t mode_conf = 0x10; // Moderate confidence level of the noise
+    uint8_t low_conf  = 0x11; // Low confidence level of the noise
+};
+
+// Point property based on intensity
+struct PointIntensity
+{
+    uint8_t normal    = 0x00; // Normal
+    uint8_t high_conf = 0x01; // High confidence level of the noise
+    uint8_t mode_conf = 0x10; // Moderate confidence level of the noise
+    uint8_t reserved;
+};
+
+struct Package
+{
+    static auto constexpr delta_ns = 10;
+
+    uint8_t version;
+    uint8_t slot_id;
+    uint8_t lidar_id;
+    uint8_t reserved;
+    uint32_t status_code;
+    uint8_t timestamp_type;
+    uint8_t data_type;
+    uint64_t timestamp;
+
+    QList<LivoxRawPoint> pnts;
+
+    bool decode( vbyte_buffer_view* view )
+    {
+        version = view->u8();
+
+        if ( version != 5 )
+            throw verror << "Packet Protocol Version != 5";
+
+        slot_id = view->u8();
+        lidar_id = view->u8();
+
+        if ( lidar_id != 1 )
+            throw verror << "Point Cloud not from Mid-40 lidar.";
+
+        reserved = view->u8();
+        status_code = view->u32_LE();
+        timestamp_type = view->u8();
+        data_type = view->u8();
+        timestamp = view->u64_LE();
+
+        auto ost = view->remained() % sizeof ( LivoxRawPoint );
+
+        while ( !view->finished() && ( ost == 0 ) )
+        {
+            LivoxRawPoint pnt;
+
+            pnt.x = view->i32_LE();
+            pnt.y = view->i32_LE();
+            pnt.z = view->i32_LE();
+            pnt.reflectivity = view->u8();
+
+            pnts.push_back( pnt );
+        }
+    }
+
+    std::string cat()
+    {
+        return vcat( " | version: ", int( version ),
+                     " | slot_id: ", int( slot_id ),
+                     " | lidar_id: ", int( lidar_id ),
+                     " | status_code: ", int( status_code ),
+                     " | timestamp_type: ",  int( timestamp_type ),
+                     " | data_type: ", int( data_type ),
+                     " | timestamp: ", std::chrono::nanoseconds( timestamp )
+                   );
+
+    }
 };
 
 //=======================================================================================

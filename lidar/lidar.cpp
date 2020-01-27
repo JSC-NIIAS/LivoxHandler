@@ -9,18 +9,22 @@ uint16_t Lidar::_seq_num = 0;
 
 //=======================================================================================
 Lidar::Lidar( QObject* parent )
-    : QObject(parent)
+    : QObject( parent )
 {
     //-----------------------------------------------------------------------------------
+
     vbyte_buffer ip_addr;
 
     ip_addr.append( uchar(192) );
     ip_addr.append( uchar(168) );
     ip_addr.append( uchar(150) );
-    ip_addr.append( uchar(90)  );
+    ip_addr.append( uchar(78)  );
     _host_ip = QHostAddress( ip_addr.view().u32_BE() );
+
     //-----------------------------------------------------------------------------------
+
     _sock_listener = new QUdpSocket(this);
+
     if ( !_sock_listener->bind( host_bcast_port ) )
     {
         throw verror << "Cannot bind to port "
@@ -29,6 +33,20 @@ Lidar::Lidar( QObject* parent )
     }
 
     connect( _sock_listener, &QUdpSocket::readyRead, this, &Lidar::_on_broadcast );
+
+    //-----------------------------------------------------------------------------------
+
+    _scatter = new CustomScatter( 1000 );
+
+    _data_timer = new QTimer( this );
+    _data_timer->start( data_ms );
+    connect( _data_timer, &QTimer::timeout,
+             [this]
+    {
+        _scatter->plot_pnts( _pnts );
+        _pnts.clear();
+    });
+
     //-----------------------------------------------------------------------------------
 }
 //=======================================================================================
@@ -102,13 +120,13 @@ void Lidar::_init_listen_ports()
 
     if ( !_sock_data->bind() )
         throw verror << "Cannot bind to port ";
-//                     << host_data_port
-//                     << " (for listen livox broadcasts)";
+    //                     << host_data_port
+    //                     << " (for listen livox broadcasts)";
 
     if ( !_sock_cmd->bind() )
         throw verror << "Cannot bind to port ";
-//                     << host_cmd_port
-//                     << " (for listen livox broadcasts)";
+    //                     << host_cmd_port
+    //                     << " (for listen livox broadcasts)";
 
     connect( _sock_data, &QUdpSocket::readyRead, this, &Lidar::_on_data );
 
@@ -150,7 +168,6 @@ void Lidar::_on_command()
     {
         auto dgram = _sock_cmd->receiveDatagram();
 
-        vdeb << "Receive Handshake Response";
         vdeb << dgram.data().toHex(' ');
 
         auto address = dgram.senderAddress();
@@ -170,7 +187,7 @@ void Lidar::_on_command()
         if (ccrc32 != crc32 )
         {
             vwarning << "CRC32";
-            continue;
+            //            continue;
         }
 
         auto view = buf.view();
@@ -187,8 +204,8 @@ void Lidar::_on_command()
         //        else if ( packet.cmd_set == kCommandSetGeneral &&
         //                  packet.cmd_code == kCommandIDGeneralHandshake )
 
-        if (head.cmd_set == kCommandSetGeneral &&
-                head.cmd_id  == kCommandIDGeneralHandshake )
+        if ( head.cmd_set == kCommandSetGeneral &&
+             head.cmd_id  == kCommandIDGeneralHandshake )
         {
             vdeb << "gotcha ack req";
 
@@ -196,7 +213,12 @@ void Lidar::_on_command()
             _heart_timer->start( heartbeat_ms );
             connect( _heart_timer, &QTimer::timeout, this, &Lidar::_send_heartbeat );
         }
-
+        else if ( head.cmd_set == kCommandSetGeneral &&
+                  head.cmd_id  == kCommandIDGeneralHeartbeat )
+        {
+//            _set_mode();
+            _set_sampling();
+        }
 
         //        Frame<AckHandshake> frame;
         //        frame.decode( &view );
@@ -213,8 +235,17 @@ void Lidar::_on_data()
     {
         auto dgram = _sock_data->receiveDatagram();
 
-        vdeb << "Receive Handshake Response";
-        vdeb << dgram.data().toHex(' ');
+        auto byte_data = dgram.data();
+        vbyte_buffer_view view( byte_data.data(), uint(byte_data.size()) );
+
+        Package pack;
+        pack.decode( &view );
+
+        _pnts.append( pack.pnts );
+
+        vdeb << "Receive Point Cloud Data of size" << dgram.data().size() << pack.cat();
+//        vdeb << dgram.data().toHex(' ');
+
         continue;
     }
 }
@@ -235,16 +266,62 @@ void Lidar::_send_heartbeat()
                                             int(dgram.size()),
                                             _livox_ip,
                                             livox_port );
-    if ( sended == int(dgram.size()) )
+    if ( sended == int( dgram.size() ) )
         vdeb << "Send Heartbeat Request";
+
     else
         vwarning << "sended";
+}
+//=======================================================================================
 
-//    head.seq_num = _seq_num;
-//    dgram = head.encode( DevInfo{} );
-//    _sock_cmd->writeDatagram( dgram.str().c_str(),
-//                              int(dgram.size()),
-//                              _livox_ip,
-//                              livox_port );
+//=======================================================================================
+void Lidar::_set_sampling()
+{
+    Head head;
+    head.version  = kSdkVer0;
+    head.seq_num  = _seq_num++;
+    head.cmd_type = kCommandTypeCmd;
+
+    Sampling samp;
+    samp.sample_ctrl = LidarSample::start;
+
+    auto dgram = head.encode( samp );
+
+    vdeb << dgram.to_Hex();
+
+    auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
+                                            int( dgram.size() ),
+                                            _livox_ip,
+                                            livox_port );
+    if ( sended == int( dgram.size() ) )
+        vdeb << "Set Lidar Sampling!";
+    else
+        throw verror << "Cannot set Lidar Sampling((";
+}
+//=======================================================================================
+
+//=======================================================================================
+void Lidar::_set_mode()
+{
+    Head head;
+    head.version  = kSdkVer0;
+    head.seq_num  = _seq_num++;
+    head.cmd_type = kCommandTypeCmd;
+
+    Mode mode;
+    mode.lidar_mode = 1;
+
+    auto dgram = head.encode( mode );
+
+    vdeb << dgram.to_Hex();
+
+    auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
+                                            int( dgram.size() ),
+                                            _livox_ip,
+                                            livox_port );
+    if ( sended == int( dgram.size() ) )
+        vdeb << "Set Lidar Mode!";
+    else
+        throw verror << "Cannot set Lidar Mode((";
 }
 //=======================================================================================

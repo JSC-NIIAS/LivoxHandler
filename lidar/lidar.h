@@ -2,6 +2,7 @@
 #define LIDAR_H
 
 #include "defs.h"
+#include "customscatter.h"
 
 #include "vlog.h"
 #include "vcat.h"
@@ -33,11 +34,16 @@ private:
     QUdpSocket *_sock_cmd = nullptr;
 
     QTimer *_heart_timer = nullptr;
+    QTimer *_data_timer = nullptr;
 
     QHostAddress _host_ip;
     QHostAddress _livox_ip;
 
     static uint16_t _seq_num;
+
+    QList<LivoxRawPoint> _pnts;
+
+    CustomScatter *_scatter = nullptr;
 
     //-----------------------------------------------------------------------------------
 
@@ -51,6 +57,9 @@ private slots:
     void _on_command();
     void _on_data();
     void _send_heartbeat();
+
+    void _set_sampling();
+    void _set_mode();
 };
 
 //=======================================================================================
