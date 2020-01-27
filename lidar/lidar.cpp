@@ -100,15 +100,15 @@ void Lidar::_init_listen_ports()
     _sock_data = new QUdpSocket(this);
     _sock_cmd  = new QUdpSocket(this);
 
-    if ( !_sock_data->bind( host_data_port ) )
-        throw verror << "Cannot bind to port "
-                     << host_data_port
-                     << " (for listen livox broadcasts)";
+    if ( !_sock_data->bind() )
+        throw verror << "Cannot bind to port ";
+//                     << host_data_port
+//                     << " (for listen livox broadcasts)";
 
-    if ( !_sock_cmd->bind( host_cmd_port ) )
-        throw verror << "Cannot bind to port "
-                     << host_cmd_port
-                     << " (for listen livox broadcasts)";
+    if ( !_sock_cmd->bind() )
+        throw verror << "Cannot bind to port ";
+//                     << host_cmd_port
+//                     << " (for listen livox broadcasts)";
 
     connect( _sock_data, &QUdpSocket::readyRead, this, &Lidar::_on_data );
 
@@ -128,9 +128,9 @@ void Lidar::_send_handshake()
 
     CmdHandshake req;
     req.user_ip   = _host_ip.toIPv4Address();
-    req.data_port = host_data_port;
-    req.cmd_port  = host_cmd_port;
-    req.imu_port  = host_imu_port;
+    req.data_port = _sock_data->localPort();
+    req.cmd_port  = _sock_cmd->localPort();
+    req.imu_port  = _sock_data->localPort();
 
     auto dgram = head.encode( req );
 
