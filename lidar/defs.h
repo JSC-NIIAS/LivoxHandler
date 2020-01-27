@@ -156,17 +156,17 @@ struct CmdHandshake
     {   //Хрен знает как посчитано, взял из sdk.
         //return 10;
         return sizeof( user_ip   ) +
-               sizeof( data_port ) * 3;
+                sizeof( data_port ) * 3;
     }
 
-//    void decode( vbyte_buffer_view* view )
-//    {
-//        //cmd.decode( view );
-//        user_ip   = view->u32_LE();
-//        data_port = view->u16_LE();
-//        cmd_port  = view->u16_LE();
-//        imu_port  = view->u16_LE();
-//    }
+    //    void decode( vbyte_buffer_view* view )
+    //    {
+    //        //cmd.decode( view );
+    //        user_ip   = view->u32_LE();
+    //        data_port = view->u16_LE();
+    //        cmd_port  = view->u16_LE();
+    //        imu_port  = view->u16_LE();
+    //    }
 
     void encode( vbyte_buffer* buf ) const
     {
@@ -490,17 +490,17 @@ struct Sampling
     }
 };
 
-struct Mode
+struct CoordinateSystem
 {
-    static constexpr uint8_t cmd_set = livox::kCommandSetLidar;
-    static constexpr uint8_t cmd_id  = 0;
-    uint8_t lidar_mode = - 1;
+    static constexpr uint8_t cmd_set = livox::kCommandSetGeneral;
+    static constexpr uint8_t cmd_id  = livox::kCommandIDGeneralCoordinateSystem;
+    uint8_t coordinate_type = PointDataType::kCartesian;
 
     static uint16_t length() { return 1; }
 
     void encode( vbyte_buffer* buf) const
     {
-        buf->append( lidar_mode );
+        buf->append( coordinate_type );
     }
 };
 
@@ -530,7 +530,7 @@ struct Head
     std::string str() const
     {
         return vcat("Head(v:", int(version), ",t:", int(cmd_type),
-                          ",set:",int(cmd_set), ",id:", int(cmd_id), ",len:", length, ")" );
+                    ",set:",int(cmd_set), ",id:", int(cmd_id), ",len:", length, ")" );
     }
 
     template<typename T>
@@ -664,7 +664,7 @@ struct Frame
                      //" | crc_16: ",  crc_16,
                      " | T: ", data.cat()
                      //" | crc_32: ", std::hex, crc_32
-                   );
+                     );
 
     }
 };
@@ -709,6 +709,35 @@ struct PointIntensity
     uint8_t reserved;
 };
 
+union StatusData
+{
+    LidarErrorCode err;
+    uint32_t _status;
+
+    LidarErrorCode fill( const uint32_t status )
+    {
+        LidarErrorCode res;
+
+        _status = status;
+
+        res.temp_status = err.temp_status;
+        res.volt_status = err.volt_status;
+        res.motor_status = err.motor_status;
+        res.dirty_warn = err.dirty_warn;
+        res.firmware_err = err.firmware_err;
+        res.pps_status = err.pps_status;
+        res.device_status = err.device_status;
+        res.fan_status = err.fan_status;
+        res.self_heating = err.self_heating;
+        res.ptp_status = err.ptp_status;
+        res.time_sync_status = err.time_sync_status;
+        res.rsvd = err.rsvd;
+        res.system_status = err.system_status;
+
+        return res;
+    }
+};
+
 struct Package
 {
     static auto constexpr delta_ns = 10;
@@ -717,7 +746,7 @@ struct Package
     uint8_t slot_id;
     uint8_t lidar_id;
     uint8_t reserved;
-    uint32_t status_code;
+    LidarErrorCode status_code;
     uint8_t timestamp_type;
     uint8_t data_type;
     uint64_t timestamp;
@@ -738,7 +767,10 @@ struct Package
             throw verror << "Point Cloud not from Mid-40 lidar.";
 
         reserved = view->u8();
-        status_code = view->u32_LE();
+
+        StatusData sd;
+        status_code = sd.fill( view->u32_LE() );
+
         timestamp_type = view->u8();
         data_type = view->u8();
         timestamp = view->u64_LE();
@@ -763,11 +795,11 @@ struct Package
         return vcat( " | version: ", int( version ),
                      " | slot_id: ", int( slot_id ),
                      " | lidar_id: ", int( lidar_id ),
-                     " | status_code: ", int( status_code ),
+                     " | status_code: ", int( status_code.system_status ),
                      " | timestamp_type: ",  int( timestamp_type ),
                      " | data_type: ", int( data_type ),
                      " | timestamp: ", std::chrono::nanoseconds( timestamp )
-                   );
+                     );
 
     }
 };

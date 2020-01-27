@@ -101,7 +101,7 @@ void CustomScatter::fill_layer( const QScatterDataArray& data, QScatter3DSeries&
 {
     layer.dataProxy()->removeItems( 0, layer.dataProxy()->itemCount() );
     layer.dataProxy()->addItems( data );
-    layer.setItemSize( 0.05f );
+    layer.setItemSize( 0.005f );
     layer.setMesh( QAbstract3DSeries::MeshPoint );
 }
 //=======================================================================================

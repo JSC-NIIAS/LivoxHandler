@@ -59,7 +59,7 @@ private slots:
     void _send_heartbeat();
 
     void _set_sampling();
-    void _set_mode();
+    void temp_status();
 };
 
 //=======================================================================================

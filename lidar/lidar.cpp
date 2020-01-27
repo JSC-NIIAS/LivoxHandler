@@ -236,7 +236,7 @@ void Lidar::_on_data()
         auto dgram = _sock_data->receiveDatagram();
 
         auto byte_data = dgram.data();
-        vbyte_buffer_view view( byte_data.data(), uint(byte_data.size()) );
+        vbyte_buffer_view view( byte_data.data(), uint( byte_data.size() ) );
 
         Package pack;
         pack.decode( &view );
@@ -244,7 +244,6 @@ void Lidar::_on_data()
         _pnts.append( pack.pnts );
 
         vdeb << "Receive Point Cloud Data of size" << dgram.data().size() << pack.cat();
-//        vdeb << dgram.data().toHex(' ');
 
         continue;
     }
@@ -301,17 +300,17 @@ void Lidar::_set_sampling()
 //=======================================================================================
 
 //=======================================================================================
-void Lidar::_set_mode()
+void Lidar::temp_status()
 {
     Head head;
     head.version  = kSdkVer0;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    Mode mode;
-    mode.lidar_mode = 1;
+    CoordinateSystem system;
+    system.coordinate_type = PointDataType::kSpherical;
 
-    auto dgram = head.encode( mode );
+    auto dgram = head.encode( system );
 
     vdeb << dgram.to_Hex();
 
@@ -320,8 +319,8 @@ void Lidar::_set_mode()
                                             _livox_ip,
                                             livox_port );
     if ( sended == int( dgram.size() ) )
-        vdeb << "Set Lidar Mode!";
+        vdeb << "Set Lidar Coordinate System!";
     else
-        throw verror << "Cannot set Lidar Mode((";
+        throw verror << "Cannot set Lidar Coordinate System((";
 }
 //=======================================================================================
