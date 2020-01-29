@@ -3,6 +3,7 @@
 
 #include "defs.h"
 #include "customscatter.h"
+#include "config.h"
 
 #include "vlog.h"
 #include "vcat.h"
@@ -24,11 +25,15 @@ class Lidar : public QObject
 
 public:
 
-    explicit Lidar( QObject* parent = nullptr );
+    explicit Lidar( Config& config,
+                    const QHostAddress& address,
+                    QObject* parent = nullptr );
 
     //-----------------------------------------------------------------------------------
 
 private:
+
+    Config *_conf = nullptr;
 
     QUdpSocket *_sock_listener = nullptr;
     QUdpSocket *_sock_data = nullptr;

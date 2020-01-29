@@ -1,5 +1,6 @@
 #include "defs.h"
 #include "lidar.h"
+#include "config.h"
 
 #include "vlog.h"
 #include "vbyte_buffer.h"
@@ -9,25 +10,41 @@
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 #include <QNetworkInterface>
+#include <QStringList>
+#include <QSettings>
 
 using namespace std;
 
 //=======================================================================================
-
 int main( int argc, char **argv )
 {
-    vbyte_buffer ip_addr;
-
-    ip_addr.append( uchar(192) );
-    ip_addr.append( uchar(168) );
-    ip_addr.append( uchar(150) );
-    ip_addr.append( uchar(78)  );
-
-    vdeb.hex() << ip_addr.view().u32_BE();
-
     QApplication qapp( argc, argv );
 
-    Lidar lidar;
+    //-----------------------------------------------------------------------------------
+
+    auto qargs = qapp.arguments();
+
+    if ( qargs.contains( "-c" ) )
+        qDebug() << qargs.indexOf( "-c" );
+
+    auto cfg_path = qargs.at( qargs.indexOf( "-c" ) + 1 );
+
+    //-----------------------------------------------------------------------------------
+
+    Config config( cfg_path );
+
+    //-----------------------------------------------------------------------------------
+
+    QHostAddress local_ip;
+
+    for ( const QHostAddress& address: QNetworkInterface::allAddresses() )
+        if ( address.protocol() == QAbstractSocket::IPv4Protocol &&
+             address != QHostAddress::LocalHost )
+             local_ip = address;
+
+    //-----------------------------------------------------------------------------------
+
+    Lidar lidar( config, local_ip );
 
     return qapp.exec();
 }

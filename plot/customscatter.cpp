@@ -21,8 +21,8 @@ CustomScatter::CustomScatter( const int plot_time )
 
     this->setShadowQuality( QAbstract3DGraph::ShadowQualityNone );
 
-    //    auto preset = Q3DCamera::CameraPresetBehind;
-    //    this->scene()->activeCamera()->setCameraPreset( ( Q3DCamera::CameraPreset ) preset );
+    auto preset = Q3DCamera::CameraPresetBehind;
+    this->scene()->activeCamera()->setCameraPreset( ( Q3DCamera::CameraPreset ) preset );
 
     this->scene()->activeCamera()->setCameraPosition( - 2, 5, 250.0f );
 
@@ -34,8 +34,6 @@ CustomScatter::CustomScatter( const int plot_time )
     _layer->setBaseColor( qcolors.at( 1 ) );
     _layer->setItemSize( 0.05 );
     _layer->setMesh( QAbstract3DSeries::MeshPoint );
-
-    this->show();
 
     _plot_timer = new QTimer( this );
     _plot_timer->start( plot_time );

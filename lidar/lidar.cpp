@@ -8,29 +8,17 @@ using namespace livox;
 uint16_t Lidar::_seq_num = 0;
 
 //=======================================================================================
-Lidar::Lidar( QObject* parent )
-    : QObject( parent )
+Lidar::Lidar( Config& config, const QHostAddress& address, QObject* parent )
+    : QObject  ( parent  )
+    , _conf    ( &config )
+    , _host_ip ( address )
 {
-    //-----------------------------------------------------------------------------------
-
-    vbyte_buffer ip_addr;
-
-    ip_addr.append( uchar(192) );
-    ip_addr.append( uchar(168) );
-    ip_addr.append( uchar(150) );
-    ip_addr.append( uchar(78)  );
-    _host_ip = QHostAddress( ip_addr.view().u32_BE() );
-
-    //-----------------------------------------------------------------------------------
-
     _sock_listener = new QUdpSocket(this);
 
     if ( !_sock_listener->bind( host_bcast_port ) )
-    {
         throw verror << "Cannot bind to port "
                      << host_data_port
                      << " (for listen livox broadcasts)";
-    }
 
     connect( _sock_listener, &QUdpSocket::readyRead, this, &Lidar::_get_broadcast );
 
@@ -40,6 +28,7 @@ Lidar::Lidar( QObject* parent )
 
     _data_timer = new QTimer( this );
     _data_timer->start( data_ms );
+
     connect( _data_timer, &QTimer::timeout,
              [this]
     {
@@ -60,9 +49,12 @@ QList<LivoxRawPoint> Lidar::_spherical_to_cartezian( const QList<LivoxSpherPoint
     {
         LivoxRawPoint tmp;
 
-        tmp.x = int32_t( pnt.depth * qSin( pnt.theta ) * qCos( pnt.phi ) );
-        tmp.y = int32_t( pnt.depth * qSin( pnt.theta ) * qSin( pnt.phi ) );
-        tmp.z = int32_t( pnt.depth * qCos( pnt.theta ) );
+        auto theta_rad = qDegreesToRadians( qreal( pnt.theta / 100. ) );
+        auto phi_rad   = qDegreesToRadians( qreal( pnt.phi / 100. ) );
+
+        tmp.x = int32_t( pnt.depth * qSin( theta_rad ) * qCos( phi_rad ) );
+        tmp.y = int32_t( pnt.depth * qSin( theta_rad ) * qSin( phi_rad ) );
+        tmp.z = int32_t( pnt.depth * qCos( theta_rad ) );
         tmp.reflectivity = pnt.reflectivity;
 
         res.push_back( tmp );
@@ -96,7 +88,10 @@ void Lidar::_get_broadcast()
         Frame<BroabcastMessage> frame;
         auto ok = frame.decode( &view );
 
-        auto ccrc = calc_crc32( byte_data.data(), uint(byte_data.size()) - 4 );
+        if ( _conf->receive.broadcast.toStdString() != frame.data.broadcast_code )
+            throw verror << "No such lidar with broadcast: " << _conf->receive.broadcast;
+
+        auto ccrc = calc_crc32( byte_data.data(), uint( byte_data.size() ) - 4 );
         //assert( ccrc == frame.crc_32 ); // Надо норм проверку.
 
         constexpr uint preambul_sz = sizeof( SdkPreamble );
@@ -113,9 +108,6 @@ void Lidar::_get_broadcast()
             return;
         }
 
-        //        if ( frame.sof != kSdkProtocolSof )
-        //            throw verror << "sof != kSdkProtocolSof!";
-
         if ( frame.data.cmd.cmd_set != kCommandSetGeneral )
             throw verror << "cmd_set != livox::kCommandSetGeneral";
 
@@ -126,9 +118,8 @@ void Lidar::_get_broadcast()
                       " Port: ", port, " | ",
                       frame.cat() );
 
-        //_seq_num = frame.seq_num;
-        //_seq_num++;
-        _seq_num = 2;
+        _seq_num = frame.seq_num;
+        _seq_num++;
 
         _set_handshake();
     }
@@ -232,10 +223,6 @@ void Lidar::_on_command()
             vwarning << "Bad packet";
             continue;
         }
-        //vdeb << head.str() << view.remained();
-
-        //        else if ( packet.cmd_set == kCommandSetGeneral &&
-        //                  packet.cmd_code == kCommandIDGeneralHandshake )
 
         if ( head.cmd_set == kCommandSetGeneral &&
              head.cmd_id  == kCommandIDGeneralHandshake )
