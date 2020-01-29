@@ -14,6 +14,7 @@
 #include <QUdpSocket>
 #include <QHostAddress>
 #include <QNetworkDatagram>
+#include <QtMath>
 
 //=======================================================================================
 
@@ -41,25 +42,37 @@ private:
 
     static uint16_t _seq_num;
 
-    QList<LivoxRawPoint> _pnts;
+    QList<LivoxSpherPoint> _pnts;
 
     CustomScatter *_scatter = nullptr;
+
+    bool _was_lidar_init = false;
+
+    QList<LivoxRawPoint> _spherical_to_cartezian( const QList<LivoxSpherPoint>& pnts );
 
     //-----------------------------------------------------------------------------------
 
 private slots:
 
-    void _on_broadcast();
     void _init_listen_ports();
-
-    void _send_handshake();
+    void _init_lidar();
 
     void _on_command();
     void _on_data();
-    void _send_heartbeat();
 
-    void _set_sampling();
-    void temp_status();
+    // General Command Set
+
+    void _get_broadcast();
+    void _set_handshake();
+    void _set_heartbeat();
+    void _sampling( const LidarSample sample );
+    void _change_coord_system( const PointDataType type );
+
+    // Lidar Command Set
+
+    void _set_mode( const LidarMode mode );
+    void _set_extr_params();
+    void _set_weather_suppress( const Turn turn );
 };
 
 //=======================================================================================

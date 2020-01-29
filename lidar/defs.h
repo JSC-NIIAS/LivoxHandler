@@ -51,6 +51,31 @@ static bool check_crc16( const char* buf, uint len )
 }
 //=======================================================================================
 
+//=======================================================================================
+
+enum
+{
+    host_bcast_port = 55000,
+    host_data_port  = 56001,
+    host_cmd_port   = 55501,
+    host_imu_port   = 56001,
+
+    livox_port = 65000
+};
+
+//=======================================================================================
+
+typedef enum
+{
+    stop  = 0,
+    start = 1
+} LidarSample;
+
+typedef enum
+{
+    off = 0,
+    on  = 1
+} Turn;
 
 //=======================================================================================
 struct Cmd
@@ -514,6 +539,40 @@ struct DevInfo
     void encode( vbyte_buffer*) const {}
 };
 
+struct Mode
+{
+    static constexpr uint8_t cmd_set = livox::kCommandSetLidar;
+    static constexpr uint8_t cmd_id  = livox::kCommandIDLidarSetMode;
+    uint8_t lidar_mode = LidarMode::kLidarModeStandby;
+
+    static uint16_t length() { return 1; }
+
+    void encode( vbyte_buffer* ) const {}
+};
+
+struct LidarExtrinsicParameters
+{
+    static constexpr uint8_t cmd_set = livox::kCommandSetLidar;
+    static constexpr uint8_t cmd_id  = livox::kCommandIDLidarSetExtrinsicParameter;
+
+    LidarSetExtrinsicParameterRequest params;
+
+    static uint16_t length() { return sizeof( LidarSetExtrinsicParameterRequest ); }
+
+    void encode( vbyte_buffer* ) const {}
+};
+
+struct LidarWeatherSuppress
+{
+    static constexpr uint8_t cmd_set = livox::kCommandSetLidar;
+    static constexpr uint8_t cmd_id  = livox::kCommandIDLidarControlRainFogSuppression;
+
+    uint8_t state = Turn::off;
+
+    static uint16_t length() { return sizeof( uint8_t ); }
+
+    void encode( vbyte_buffer* ) const {}
+};
 
 struct Head
 {
@@ -671,26 +730,6 @@ struct Frame
 
 //=======================================================================================
 
-enum
-{
-    host_bcast_port = 55000,
-    host_data_port  = 56001,
-    host_cmd_port   = 55501,
-    host_imu_port   = 56001,
-
-    livox_port = 65000
-};
-
-//=======================================================================================
-
-typedef enum
-{
-    stop  = 0,
-    start = 1
-} LidarSample;
-
-//=======================================================================================
-
 // Point property based on spatial position
 struct PointSpatialPosition
 {
@@ -738,6 +777,9 @@ union StatusData
     }
 };
 
+#include <type_traits>
+
+template <typename P>
 struct Package
 {
     static auto constexpr delta_ns = 10;
@@ -751,7 +793,7 @@ struct Package
     uint8_t data_type;
     uint64_t timestamp;
 
-    QList<LivoxRawPoint> pnts;
+    QList<LivoxSpherPoint> pnts;
 
     bool decode( vbyte_buffer_view* view )
     {
@@ -775,15 +817,15 @@ struct Package
         data_type = view->u8();
         timestamp = view->u64_LE();
 
-        auto ost = view->remained() % sizeof ( LivoxRawPoint );
+        auto ost = view->remained() % sizeof ( LivoxSpherPoint );
 
         while ( !view->finished() && ( ost == 0 ) )
         {
-            LivoxRawPoint pnt;
+            LivoxSpherPoint pnt;
 
-            pnt.x = view->i32_LE();
-            pnt.y = view->i32_LE();
-            pnt.z = view->i32_LE();
+            pnt.depth = view->u32_LE();
+            pnt.theta = view->u16_LE();
+            pnt.phi   = view->u16_LE();
             pnt.reflectivity = view->u8();
 
             pnts.push_back( pnt );
