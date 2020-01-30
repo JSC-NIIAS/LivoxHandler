@@ -618,7 +618,7 @@ struct Head
 
     bool decode( vbyte_buffer_view * view )
     {
-        if ( view->remained() < _heap_len() - 4 ) return false;
+        if ( view->remained() < size_t( _heap_len() - 4 ) ) return false;
         auto for_crc = view->show_string( _heap_for_crc16() );
         auto calc_crc = calc_crc16( for_crc.c_str(), _heap_for_crc16() );
 
@@ -845,6 +845,16 @@ struct Package
     }
 };
 
+//=======================================================================================
+
+#include <QHostAddress>
+struct BroabcastInfo
+{
+    QHostAddress address;
+    int          port;
+    QString      broadcast_code;
+    uint16_t     seq_num;
+};
 //=======================================================================================
 
 #endif

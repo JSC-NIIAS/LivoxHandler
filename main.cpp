@@ -35,20 +35,18 @@ int main( int argc, char **argv )
 
     //-----------------------------------------------------------------------------------
 
-    Config config( cfg_path );
+    Config config( cfg_path, &qapp );
 
     //-----------------------------------------------------------------------------------
-
-    QHostAddress local_ip;
 
     for ( const QHostAddress& address: QNetworkInterface::allAddresses() )
         if ( address.protocol() == QAbstractSocket::IPv4Protocol &&
              address != QHostAddress::LocalHost )
-            local_ip = address;
+            config.ip( address );
 
     //-----------------------------------------------------------------------------------
 
-    LivoxBroadcaster lbroadcast( config, local_ip, &qapp );
+    LivoxBroadcaster lbroadcast( config, &qapp );
 
     DriverList broabcast_list;
 
@@ -60,12 +58,15 @@ int main( int argc, char **argv )
 
         else if ( config.contains( info.broadcast_code ) &&
                   !broabcast_list.contains( info.broadcast_code ) )
-            broabcast_list.insert( info.broadcast_code, new LivoxDriver( &qapp ) );
+            broabcast_list.insert( info.broadcast_code,
+                                   new LivoxDriver( config, info, &qapp ) );
 
         else if ( config.contains( info.broadcast_code ) &&
                   broabcast_list.contains( info.broadcast_code ) )
             vwarning << "The Driver List already contains Device with broadcast!"
                      << info.broadcast_code;
+
+        return 0;
     } );
 
     return qapp.exec();

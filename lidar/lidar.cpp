@@ -24,7 +24,7 @@ Lidar::Lidar( Config& config, const QHostAddress& address, QObject* parent )
 
     //-----------------------------------------------------------------------------------
 
-    _scatter = new CustomScatter( 1000 );
+    _scatter = new CustomScatter( 1000, "" );
 
     _data_timer = new QTimer( this );
     _data_timer->start( data_ms );

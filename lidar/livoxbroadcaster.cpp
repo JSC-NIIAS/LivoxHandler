@@ -4,11 +4,10 @@ using namespace livox;
 
 //=======================================================================================
 LivoxBroadcaster::LivoxBroadcaster( Config& config,
-                                    const QHostAddress& address,
                                     QObject *parent )
-    : QObject( parent )
-    , _conf    ( &config )
-    , _local_ip ( address )
+    : QObject   ( parent      )
+    , _conf     ( &config     )
+    , _local_ip ( config.ip() )
 {
     _sock_listener = new QUdpSocket( this );
 
@@ -80,6 +79,7 @@ void LivoxBroadcaster::_get()
         }
 
         info.broadcast_code = frame.data.broadcast_code.c_str();
+        info.seq_num = frame.seq_num;
 
         vdeb << vcat( "Receive Broadcast",
                       "Address: ", info.address.toString(), " | ",

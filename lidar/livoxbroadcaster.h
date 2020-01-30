@@ -10,15 +10,6 @@
 #include <QNetworkDatagram>
 
 //=======================================================================================
-
-struct BroabcastInfo
-{
-    QHostAddress address;
-    int          port;
-    QString      broadcast_code;
-};
-
-//=======================================================================================
 class LivoxBroadcaster : public QObject
 {
     Q_OBJECT
@@ -26,7 +17,6 @@ class LivoxBroadcaster : public QObject
 public:
 
     explicit LivoxBroadcaster( Config& config,
-                               const QHostAddress& address,
                                QObject *parent = nullptr );
 
     //-----------------------------------------------------------------------------------

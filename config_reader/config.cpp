@@ -90,10 +90,23 @@ void Config::to_file( const QString& fname )
     {
         settings.beginGroup( "lidar_params" );
         settings.setValue( "weather_suppress", bool( false ) );
+        settings.setValue( "point_type", int(1) );
         settings.endGroup();
     }
 
     settings.sync();
+}
+//=======================================================================================
+
+//=======================================================================================
+QHostAddress Config::ip() const
+{
+    return _ip;
+}
+//=======================================================================================
+void Config::ip( const QHostAddress& ip )
+{
+    _ip = ip;
 }
 //=======================================================================================
 

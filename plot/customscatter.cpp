@@ -3,7 +3,7 @@
 using namespace QtDataVisualization;
 
 //=======================================================================================
-CustomScatter::CustomScatter( const int plot_time )
+CustomScatter::CustomScatter( const int plot_time, const QString& name )
 {
     this->setFlags( this->flags() ^ Qt::FramelessWindowHint );
 
@@ -15,7 +15,7 @@ CustomScatter::CustomScatter( const int plot_time )
     this->axisY()->setTitle("Y");
     this->axisZ()->setTitle("Z");
 
-    this->axisX()->setRange( -5000, 5000 );
+    this->axisX()->setRange( - 5000, 5000 );
     this->axisY()->setRange( 0, 30000 );
     this->axisZ()->setRange( - 1000, 5000 );
 

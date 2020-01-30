@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QString>
 #include <QSettings>
+#include <QHostAddress>
 
 //=======================================================================================
 
@@ -19,6 +20,11 @@ public:
     explicit Config( const QString& fname = {}, QObject* parent = nullptr );
 
     static void to_file( const QString& fname );
+
+    //-----------------------------------------------------------------------------------
+
+    QHostAddress ip() const;
+    void ip( const QHostAddress& );
 
     //-----------------------------------------------------------------------------------
 
@@ -70,11 +76,15 @@ public:
     struct lidar_params
     {
         bool weather_suppress;
+        int  point_type;
+
     } lidar_params;
 
     //-----------------------------------------------------------------------------------
 
     bool contains( const QString& broadcast );
+
+    //-----------------------------------------------------------------------------------
 
 private:
 
@@ -83,6 +93,8 @@ private:
     QString _default_path;
 
     QStringList _broadcast_list;
+
+    QHostAddress _ip;
 
     //-----------------------------------------------------------------------------------
 
