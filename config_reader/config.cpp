@@ -1,7 +1,6 @@
 #include "config.h"
 
 #include <QCoreApplication>
-#include <QStringBuilder>
 
 //=======================================================================================
 Config::Config( const QString& fname, QObject* parent )
