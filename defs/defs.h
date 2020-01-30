@@ -55,12 +55,11 @@ static bool check_crc16( const char* buf, uint len )
 
 enum
 {
-    host_bcast_port = 55000,
-    host_data_port  = 56001,
-    host_cmd_port   = 55501,
-    host_imu_port   = 56001,
-
-    livox_port = 65000
+    local_bcast_port = 55000,
+    host_data_port   = 56001,
+    host_cmd_port    = 55501,
+    host_imu_port    = 56001,
+    livox_port       = 65000
 };
 
 //=======================================================================================

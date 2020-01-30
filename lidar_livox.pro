@@ -28,7 +28,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SDK_DIR = $$PWD/livox_sdk
 include( $$SDK_DIR/sdk_core/sdk_core.pri )
-#include( $$PWD/sdk.pri )
 
 VLIBS_DIR = $$PWD/vlibs2
 include( $$PWD/vlibs.pri )
@@ -42,10 +41,12 @@ SOURCES += main.cpp
 include( $$PWD/config_reader/config_reader.pri )
 include( $$PWD/lidar/lidar.pri )
 include( $$PWD/plot/plot.pri )
+include( $$PWD/defs/defs.pri )
 
 #========================================================================================
 
-OTHER_FILES += cfg/lidar_livox.ini
+OTHER_FILES += cfg/*
+OTHER_FILES += scripts/*
 
 #========================================================================================
 

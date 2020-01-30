@@ -1,6 +1,8 @@
 #include "defs.h"
 #include "lidar.h"
 #include "config.h"
+#include "livoxbroadcaster.h"
+#include "livoxdriver.h"
 
 #include "vlog.h"
 #include "vbyte_buffer.h"
@@ -14,6 +16,8 @@
 #include <QSettings>
 
 using namespace std;
+
+using DriverList = QMap<QString, LivoxDriver*>;
 
 //=======================================================================================
 int main( int argc, char **argv )
@@ -40,11 +44,29 @@ int main( int argc, char **argv )
     for ( const QHostAddress& address: QNetworkInterface::allAddresses() )
         if ( address.protocol() == QAbstractSocket::IPv4Protocol &&
              address != QHostAddress::LocalHost )
-             local_ip = address;
+            local_ip = address;
 
     //-----------------------------------------------------------------------------------
 
-    Lidar lidar( config, local_ip );
+    LivoxBroadcaster lbroadcast( config, local_ip, &qapp );
+
+    DriverList broabcast_list;
+
+    QObject::connect( &lbroadcast, &LivoxBroadcaster::receive,
+                      [&]( const BroabcastInfo& info )
+    {
+        if ( !config.contains( info.broadcast_code ) )
+            return - 1;
+
+        else if ( config.contains( info.broadcast_code ) &&
+                  !broabcast_list.contains( info.broadcast_code ) )
+            broabcast_list.insert( info.broadcast_code, new LivoxDriver( &qapp ) );
+
+        else if ( config.contains( info.broadcast_code ) &&
+                  broabcast_list.contains( info.broadcast_code ) )
+            vwarning << "The Driver List already contains Device with broadcast!"
+                     << info.broadcast_code;
+    } );
 
     return qapp.exec();
 }

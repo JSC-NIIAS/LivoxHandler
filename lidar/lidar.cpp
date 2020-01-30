@@ -15,7 +15,7 @@ Lidar::Lidar( Config& config, const QHostAddress& address, QObject* parent )
 {
     _sock_listener = new QUdpSocket(this);
 
-    if ( !_sock_listener->bind( host_bcast_port ) )
+    if ( !_sock_listener->bind( local_bcast_port ) )
         throw verror << "Cannot bind to port "
                      << host_data_port
                      << " (for listen livox broadcasts)";
@@ -150,7 +150,7 @@ void Lidar::_init_lidar()
     _sampling( LidarSample::start );
 
     _change_coord_system( PointDataType::kSpherical );
-//    _set_mode( LidarMode::kLidarModeNormal );
+    //    _set_mode( LidarMode::kLidarModeNormal );
     _set_weather_suppress( Turn::off );
     _set_extr_params();
 
@@ -323,7 +323,7 @@ void Lidar::_change_coord_system( const PointDataType type )
 
     auto dgram = head.encode( system );
 
-//    vdeb << dgram.to_Hex();
+    //    vdeb << dgram.to_Hex();
 
     auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             int( dgram.size() ),
@@ -350,7 +350,7 @@ void Lidar::_set_mode( const LidarMode mode )
 
     auto dgram = head.encode( lidar );
 
-//    vdeb << dgram.to_Hex();
+    //    vdeb << dgram.to_Hex();
 
     auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             int( dgram.size() ),
@@ -381,7 +381,7 @@ void Lidar::_set_extr_params()
 
     auto dgram = head.encode( eparams );
 
-//    vdeb << dgram.to_Hex();
+    //    vdeb << dgram.to_Hex();
 
     auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             int( dgram.size() ),
@@ -405,7 +405,7 @@ void Lidar::_set_weather_suppress( const Turn turn )
 
     auto dgram = head.encode( sup );
 
-//    vdeb << dgram.to_Hex();
+    //    vdeb << dgram.to_Hex();
 
     auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             int( dgram.size() ),

@@ -45,6 +45,8 @@ Config::Config( const QString& fname, QObject* parent )
         lidar_params.weather_suppress = _settings->value( "weather_suppress", "" ).toBool();
         _settings->endGroup();
     }
+
+    _broadcast_list.append( receive.broadcast );
 }
 //=======================================================================================
 void Config::to_file( const QString& fname )
@@ -92,6 +94,13 @@ void Config::to_file( const QString& fname )
     }
 
     settings.sync();
+}
+//=======================================================================================
+
+//=======================================================================================
+bool Config::contains( const QString& broadcast )
+{
+    return _broadcast_list.contains( broadcast );
 }
 //=======================================================================================
 

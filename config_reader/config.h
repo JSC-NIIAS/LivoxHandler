@@ -74,11 +74,15 @@ public:
 
     //-----------------------------------------------------------------------------------
 
+    bool contains( const QString& broadcast );
+
 private:
 
     QSettings *_settings = nullptr;
 
     QString _default_path;
+
+    QStringList _broadcast_list;
 
     //-----------------------------------------------------------------------------------
 
