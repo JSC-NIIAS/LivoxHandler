@@ -1,4 +1,3 @@
-#include "lidar.h"
 #include "config.h"
 #include "livoxbroadcaster.h"
 #include "livoxdriver.h"
