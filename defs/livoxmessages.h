@@ -18,6 +18,18 @@
 #include <string>
 
 //=======================================================================================
+union StatusData
+{
+    LidarErrorCode err;
+    uint32_t _status;
+
+    //-----------------------------------------------------------------------------------
+
+    LidarErrorCode fill( const uint32_t status );
+};
+//=======================================================================================
+
+//=======================================================================================
 template<typename T>
 struct Frame
 {
@@ -122,6 +134,7 @@ private:
 //=======================================================================================
 
 //=======================================================================================
+template <typename T>
 struct Package
 {
     static auto constexpr delta_ns = 10;
@@ -135,26 +148,61 @@ struct Package
     uint8_t data_type;
     uint64_t timestamp;
 
-    QList<LivoxSpherPoint> pnts;
+    QList<T> pnts;
 
     //-----------------------------------------------------------------------------------
 
-    bool decode( vbyte_buffer_view* view );
+    bool decode( vbyte_buffer_view* view )
+    {
+        version = view->u8();
 
-    std::string cat();
+        if ( version != 5 )
+            throw verror << "Packet Protocol Version != 5";
 
-};
-//=======================================================================================
+        slot_id = view->u8();
+        lidar_id = view->u8();
 
-//=======================================================================================
-union StatusData
-{
-    LidarErrorCode err;
-    uint32_t _status;
+        if ( lidar_id != 1 )
+            throw verror << "Point Cloud not from Mid-40 lidar.";
 
-    //-----------------------------------------------------------------------------------
+        reserved = view->u8();
 
-    LidarErrorCode fill( const uint32_t status );
+        StatusData sd;
+        status_code = sd.fill( view->u32_LE() );
+
+        timestamp_type = view->u8();
+        data_type = view->u8();
+        timestamp = view->u64_LE();
+
+        auto ost = view->remained() % sizeof (T);
+
+        while ( !view->finished() && ( ost == 0 ) )
+        {
+            T pnt;
+
+            pnt.depth = view->u32_LE();
+            pnt.theta = view->u16_LE();
+            pnt.phi   = view->u16_LE();
+            pnt.reflectivity = view->u8();
+
+            pnts.push_back( pnt );
+        }
+
+        return true;
+    }
+
+    std::string cat()
+    {
+        return vcat( " | version: ",         int( version ),
+                     " | slot_id: ",         int( slot_id ),
+                     " | lidar_id: ",        int( lidar_id ),
+                     " | status_code: ",     int( status_code.system_status ),
+                     " | timestamp_type: ",  int( timestamp_type ),
+                     " | data_type: ",       int( data_type ),
+                     " | timestamp: ",       std::chrono::nanoseconds( timestamp )
+                     ).str();
+    }
+
 };
 //=======================================================================================
 

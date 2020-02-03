@@ -50,19 +50,13 @@ void LivoxBroadcaster::_get()
             return;
         }
 
-        auto ccrc = calc_crc32( byte_data.data(), uint( byte_data.size() ) - 4 );
+//        auto ccrc = calc_crc32( byte_data.data(), uint( byte_data.size() ) - 4 );
 
         constexpr uint preambul_sz = sizeof( SdkPreamble );
 
         if ( !check_crc16( byte_data.data(), preambul_sz ) )
         {
             vwarning << "Bad preambul CRC16 in bcast message";
-            return;
-        }
-
-        if ( frame.data.dev_type != kDeviceTypeLidarMid40 )
-        {
-            vwarning << "No Mid-40 connected device";
             return;
         }
 
@@ -80,6 +74,7 @@ void LivoxBroadcaster::_get()
 
         info.broadcast_code = frame.data.broadcast_code.c_str();
         info.seq_num = frame.seq_num;
+        info.dev_type = frame.data.dev_type;
 
         vdeb << vcat( "Receive Broadcast",
                       "Address: ", info.address.toString(), " | ",

@@ -571,7 +571,7 @@ std::string CmdUpdateUTCSync::cat()
                  " | month: ", int( month ),
                  " | day: ", int( day ),
                  " | hour: ", int( hour ),
-                 " | microsecond: ", int( microsecond ) );
+                 " | microsecond: ", std::chrono::microseconds( microsecond ) );
 }
 //=======================================================================================
 

@@ -101,6 +101,7 @@ struct BroabcastInfo
     int          port;
     QString      broadcast_code;
     uint16_t     seq_num;
+    uint8_t      dev_type;
 };
 //=======================================================================================
 

@@ -6,7 +6,8 @@
 #include <QList>
 #include <QtMath>
 
-// Polar to Cartesian
+// Point types conversion
+
 template <typename TI, typename TO>
 QList<TO> convert( const QList<TI>& pnts )
 {
@@ -16,6 +17,7 @@ QList<TO> convert( const QList<TI>& pnts )
     {
         TO tmp;
 
+        // Single: Polar to Cartesian
         if ( std::is_same<TI, LivoxSpherPoint>::value &&
              std::is_same<TO, LivoxRawPoint>::value )
         {

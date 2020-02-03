@@ -51,6 +51,8 @@ private:
 
     uint16_t _seq_num;
 
+    uint8_t _dev_type;
+
     //-----------------------------------------------------------------------------------
 
 public slots:
@@ -72,6 +74,7 @@ public slots:
     void _set_mode( const LidarMode mode );
     void _set_extr_params();
     void _set_weather_suppress( const Turn turn );
+    void _set_return_mode( const PointCloudReturnMode mode );
 
 };
 //=======================================================================================

@@ -6,10 +6,11 @@ using namespace livox;
 LivoxDriver::LivoxDriver( Config& config,
                           const BroabcastInfo& info,
                           QObject *parent )
-    : QObject  ( parent       )
-    , _conf    ( &config      )
-    , _info    ( info         )
-    , _seq_num ( info.seq_num )
+    : QObject   ( parent        )
+    , _conf     ( &config       )
+    , _info     ( info          )
+    , _seq_num  ( info.seq_num  )
+    , _dev_type ( info.dev_type )
 {
     _container = new LivoxContainer( _info.broadcast_code, this );
 
@@ -109,7 +110,7 @@ void LivoxDriver::_on_data()
         auto byte_data = dgram.data();
         vbyte_buffer_view view( byte_data.data(), uint( byte_data.size() ) );
 
-        Package pack;
+        Package<LivoxSpherPoint> pack;
         pack.decode( &view );
 
         transmit_pnts( pack.pnts );
@@ -123,6 +124,7 @@ void LivoxDriver::_on_data()
 void LivoxDriver::_init_lidar()
 {
     _change_coord_system( PointDataType::kSpherical );
+
     _sampling( LidarSample::start );
 
     _set_mode( LidarMode::kLidarModeNormal );
@@ -203,7 +205,6 @@ void LivoxDriver::_sampling( const LidarSample sample )
 void LivoxDriver::_change_coord_system( const PointDataType type )
 {
     Frame<CmdCoordinateSystem> head;
-    head.version  = kSdkVer0;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
@@ -288,6 +289,29 @@ void LivoxDriver::_set_weather_suppress( const Turn turn )
                                             livox_port );
     if ( sended == int( dgram.size() ) )
         vdeb << "Set Lidar " << _info.broadcast_code << " Rain/Fog Suppression: " << turn;
+    else
+        throw verror << "Couldn't set Lidar "
+                     << _info.broadcast_code
+                     << " Rain/Fog Suppression((";
+}
+//=======================================================================================
+void LivoxDriver::_set_return_mode( const PointCloudReturnMode mode )
+{
+    Frame<CmdSetReturnMode> head;
+    head.seq_num  = _seq_num++;
+    head.cmd_type = kCommandTypeCmd;
+
+    head.data.mode = mode;
+
+    auto dgram = head.encode();
+
+    auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
+                                            int( dgram.size() ),
+                                            _info.address,
+                                            livox_port );
+    if ( sended == int( dgram.size() ) )
+        vdeb << "Set Lidar " << _info.broadcast_code
+             << " Return Mode: " << mode;
     else
         throw verror << "Couldn't set Lidar "
                      << _info.broadcast_code
