@@ -40,7 +40,7 @@ struct Frame
         return T::length() + 15;
     }
 
-    vbyte_buffer encode( const T& cmd )
+    vbyte_buffer encode()
     {
         vbyte_buffer buf;
 
@@ -56,7 +56,7 @@ struct Frame
         buf.append( T::cmd_set );
         buf.append( T::cmd_id  );
 
-        data.encode();
+        buf.append( data.encode() );
 
         uint32_t crc32 = calc_crc32( buf.str().c_str(), buf.str().size() );
         buf.append_LE( crc32 );
@@ -100,7 +100,7 @@ struct Frame
                     ", cmd_set:", int( cmd_set ),
                      ", cmd_id:", int( cmd_id ),
                      ", length:", length,
-//                     ", Data:", data.cat(),
+                     ", Data:", data.cat(),
                      ")" ).str();
     }
 

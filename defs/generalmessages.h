@@ -40,7 +40,7 @@ struct MsgBroadcast
 
     vbyte_buffer encode();
 
-    std::string cat();
+    std::string cat() const;
 };
 //=======================================================================================
 

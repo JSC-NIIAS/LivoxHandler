@@ -140,19 +140,20 @@ void LivoxDriver::_set_handshake()
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeAck;
 
-    CmdHandshake req;
-    req.user_ip   = _conf->ip().toIPv4Address();
-    req.data_port = _sock_data->localPort();
-    req.cmd_port  = _sock_cmd->localPort();
-    req.imu_port  = _sock_data->localPort();
+    head.data.user_ip   = _conf->ip().toIPv4Address();
+    head.data.data_port = _sock_data->localPort();
+    head.data.cmd_port  = _sock_cmd->localPort();
+    head.data.imu_port  = _sock_data->localPort();
 
-    auto dgram = head.encode( req );
+    auto dgram = head.encode();
+
+    vdeb << dgram.to_Hex();
 
     auto sended = _sock_cmd->writeDatagram( dgram.data(),
                                             int( dgram.size() ),
                                             _info.address,
                                             livox_port );
-    if ( sended == int(dgram.size()) )
+    if ( sended == int( dgram.size() ) )
         vdeb << "Send Handshake Request to" << _info.broadcast_code;
     else
         throw verror << "Cannot send Handshake" << _info.broadcast_code;
@@ -164,10 +165,10 @@ void LivoxDriver::_set_heartbeat()
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    auto dgram = head.encode( CmdHeartbeat() );
+    auto dgram = head.encode();
 
     auto sended = _sock_cmd->writeDatagram( dgram.data(),
-                                            int(dgram.size()),
+                                            int( dgram.size() ),
                                             _info.address,
                                             livox_port );
     if ( sended == int( dgram.size() ) )
@@ -183,10 +184,9 @@ void LivoxDriver::_sampling( const LidarSample sample )
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    CmdSampling samp;
-    samp.sample_ctrl = sample;
+    head.data.sample_ctrl = sample;
 
-    auto dgram = head.encode( samp );
+    auto dgram = head.encode();
 
     auto sended = _sock_cmd->writeDatagram( dgram.data(),
                                             int( dgram.size() ),
@@ -207,10 +207,9 @@ void LivoxDriver::_change_coord_system( const PointDataType type )
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    CmdCoordinateSystem system;
-    system.coordinate_type = type;
+    head.data.coordinate_type = type;
 
-    auto dgram = head.encode( system );
+    auto dgram = head.encode();
 
     auto sended = _sock_cmd->writeDatagram( dgram.data(),
                                             int( dgram.size() ),
@@ -230,10 +229,9 @@ void LivoxDriver::_set_mode( const LidarMode mode )
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    CmdSetMode lidar;
-    lidar.lidar_mode = LidarMode::kLidarModeNormal;
+    head.data.lidar_mode = LidarMode::kLidarModeNormal;
 
-    auto dgram = head.encode( lidar );
+    auto dgram = head.encode();
 
     auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             int( dgram.size() ),
@@ -251,17 +249,16 @@ void LivoxDriver::_set_extr_params()
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    CmdWriteExtrinsicParams eparams;
     {
-        eparams.roll  = _conf->offset.roll;
-        eparams.pitch = _conf->offset.pitch;
-        eparams.yaw   = _conf->offset.yaw;
-        eparams.x = _conf->offset.x;
-        eparams.y = _conf->offset.y;
-        eparams.z = _conf->offset.z;
+        head.data.roll  = _conf->offset.roll;
+        head.data.pitch = _conf->offset.pitch;
+        head.data.yaw   = _conf->offset.yaw;
+        head.data.x = _conf->offset.x;
+        head.data.y = _conf->offset.y;
+        head.data.z = _conf->offset.z;
     }
 
-    auto dgram = head.encode( eparams );
+    auto dgram = head.encode();
 
     auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             int( dgram.size() ),
@@ -281,10 +278,9 @@ void LivoxDriver::_set_weather_suppress( const Turn turn )
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    CmdWeatherSuppression sup;
-    sup.state = turn;
+    head.data.state = turn;
 
-    auto dgram = head.encode( sup );
+    auto dgram = head.encode();
 
     auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             int( dgram.size() ),

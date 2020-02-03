@@ -25,11 +25,11 @@ vbyte_buffer MsgBroadcast::encode()
     return buf;
 }
 //=======================================================================================
-std::string MsgBroadcast::cat()
+std::string MsgBroadcast::cat() const
 {
     return vcat( " | broadcast_code: ", broadcast_code,
                  " | dev_type: ", int( dev_type ),
-                 " | reserved: ", int(reserved) );
+                 " | reserved: ", int(reserved) ).str();
 }
 //=======================================================================================
 

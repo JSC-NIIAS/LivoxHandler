@@ -61,10 +61,10 @@ int main( int argc, char **argv )
             broabcast_list.insert( info.broadcast_code,
                                    new LivoxDriver( config, info, &qapp ) );
 
-        else if ( config.contains( info.broadcast_code ) &&
-                  broabcast_list.contains( info.broadcast_code ) )
-            vwarning << "The Driver List already contains Device with broadcast!"
-                     << info.broadcast_code;
+//        else if ( config.contains( info.broadcast_code ) &&
+//                  broabcast_list.contains( info.broadcast_code ) )
+//            vwarning << "The Driver List already contains Device with broadcast!"
+//                     << info.broadcast_code;
 
         return 0;
     } );

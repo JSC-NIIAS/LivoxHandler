@@ -34,12 +34,12 @@ Config::Config( const QString& fname, QObject* parent )
         _settings->endGroup();
 
         _settings->beginGroup( "offset" );
-        offset.x = _settings->value( "x", "" ).toFloat();
-        offset.y = _settings->value( "y", "" ).toFloat();
-        offset.z = _settings->value( "z", "" ).toFloat();
         offset.roll = _settings->value( "roll", "" ).toFloat();
         offset.pitch = _settings->value( "pitch", "" ).toFloat();
         offset.yaw = _settings->value( "yaw", "" ).toFloat();
+        offset.x = _settings->value( "x", "" ).toInt();
+        offset.y = _settings->value( "y", "" ).toInt();
+        offset.z = _settings->value( "z", "" ).toInt();
         _settings->endGroup();
 
         _settings->beginGroup( "lidar_params" );
@@ -79,12 +79,12 @@ void Config::to_file( const QString& fname )
 
     {
         settings.beginGroup( "offset" );
-        settings.setValue( "x",     qreal( 0.0 ) );
-        settings.setValue( "y",     qreal( 0.0 ) );
-        settings.setValue( "z",     qreal( 0.0 ) );
         settings.setValue( "roll",  qreal( 0.0 ) );
         settings.setValue( "pitch", qreal( 0.0 ) );
         settings.setValue( "yaw",   qreal( 0.0 ) );
+        settings.setValue( "x",     int(0) );
+        settings.setValue( "y",     int(0) );
+        settings.setValue( "z",     int(0) );
         settings.endGroup();
     }
 

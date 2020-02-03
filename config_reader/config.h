@@ -63,12 +63,12 @@ public:
 
     struct offset
     {
-        float x;
-        float y;
-        float z;
         float roll;
         float pitch;
         float yaw;
+        int32_t x;
+        int32_t y;
+        int32_t z;
 
     } offset;
 
