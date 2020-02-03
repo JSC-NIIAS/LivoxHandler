@@ -1,4 +1,5 @@
 #include "lidar.h"
+#include "livoxmessages.h"
 
 using namespace std;
 using namespace livox;
@@ -85,7 +86,7 @@ void Lidar::_get_broadcast()
         auto byte_data = dgram.data();
         vbyte_buffer_view view( byte_data.data(), uint(byte_data.size()) );
 
-        Frame<BroabcastMessage> frame;
+        Frame<MsgBroadcast> frame;
         auto ok = frame.decode( &view );
 
         if ( _conf->receive.broadcast.toStdString() != frame.data.broadcast_code )
@@ -108,10 +109,10 @@ void Lidar::_get_broadcast()
             return;
         }
 
-        if ( frame.data.cmd.cmd_set != kCommandSetGeneral )
+        if ( frame.data.cmd_set != kCommandSetGeneral )
             throw verror << "cmd_set != livox::kCommandSetGeneral";
 
-        if ( frame.data.cmd.cmd_id != kCommandIDGeneralBroadcast )
+        if ( frame.data.cmd_id != kCommandIDGeneralBroadcast )
             throw verror << "cmd_id != livox::kCommandIDGeneralBroadcast";
 
         vdeb << vcat( "Address: ", _livox_ip.toString(), " | ",
@@ -161,10 +162,7 @@ void Lidar::_init_lidar()
 //=======================================================================================
 void Lidar::_set_handshake()
 {
-    Cmd cmd( kCommandSetGeneral, kCommandIDGeneralHandshake );
-
-    Head head;
-    head.version  = kSdkVer0;
+    Frame<CmdHandshake> head;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeAck;
 
@@ -216,7 +214,7 @@ void Lidar::_on_command()
 
         auto view = buf.view();
 
-        Head head;
+        Frame<AckHandshake> head;
         auto ok = head.decode( &view );
         if (!ok)
         {
@@ -249,7 +247,7 @@ void Lidar::_on_data()
         auto byte_data = dgram.data();
         vbyte_buffer_view view( byte_data.data(), uint( byte_data.size() ) );
 
-        Package<LivoxSpherPoint> pack;
+        Package pack;
         pack.decode( &view );
 
         _pnts.append( pack.pnts );
@@ -264,13 +262,11 @@ void Lidar::_on_data()
 //=======================================================================================
 void Lidar::_set_heartbeat()
 {
-    Head head;
-
-    head.version  = kSdkVer0;
-    head.cmd_type = kCommandTypeCmd;
+    Frame<CmdHeartbeat> head;
     head.seq_num  = _seq_num++;
+    head.cmd_type = kCommandTypeCmd;
 
-    auto dgram = head.encode( HeartBeat2{} );
+    auto dgram = head.encode( CmdHeartbeat() );
 
     auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             int(dgram.size()),
@@ -287,12 +283,12 @@ void Lidar::_set_heartbeat()
 //=======================================================================================
 void Lidar::_sampling( const LidarSample sample )
 {
-    Head head;
+    Frame<CmdSampling> head;
     head.version  = kSdkVer0;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    Sampling samp;
+    CmdSampling samp;
     samp.sample_ctrl = sample;
 
     auto dgram = head.encode( samp );
@@ -313,17 +309,14 @@ void Lidar::_sampling( const LidarSample sample )
 //=======================================================================================
 void Lidar::_change_coord_system( const PointDataType type )
 {
-    Head head;
-    head.version  = kSdkVer0;
+    Frame<CmdCoordinateSystem> head;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    CoordinateSystem system;
+    CmdCoordinateSystem system;
     system.coordinate_type = type;
 
     auto dgram = head.encode( system );
-
-    //    vdeb << dgram.to_Hex();
 
     auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
                                             int( dgram.size() ),
@@ -340,12 +333,11 @@ void Lidar::_change_coord_system( const PointDataType type )
 //=======================================================================================
 void Lidar::_set_mode( const LidarMode mode )
 {
-    Head head;
-    head.version  = kSdkVer0;
+    Frame<CmdSetMode> head;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    Mode lidar;
+    CmdSetMode lidar;
     lidar.lidar_mode = LidarMode::kLidarModeNormal;
 
     auto dgram = head.encode( lidar );
@@ -364,19 +356,18 @@ void Lidar::_set_mode( const LidarMode mode )
 //=======================================================================================
 void Lidar::_set_extr_params()
 {
-    Head head;
-    head.version  = kSdkVer0;
+    Frame<CmdWriteExtrinsicParams> head;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    LidarExtrinsicParameters eparams;
+    CmdWriteExtrinsicParams eparams;
     {
-        eparams.params.roll  = 0.0;
-        eparams.params.pitch = 0.0;
-        eparams.params.yaw   = 0.0;
-        eparams.params.x = 0;
-        eparams.params.y = 0;
-        eparams.params.z = 450;
+        eparams.roll  = _conf->offset.roll;
+        eparams.pitch = _conf->offset.pitch;
+        eparams.yaw   = _conf->offset.yaw;
+        eparams.x = _conf->offset.x;
+        eparams.y = _conf->offset.y;
+        eparams.z = _conf->offset.z;
     }
 
     auto dgram = head.encode( eparams );
@@ -392,15 +383,14 @@ void Lidar::_set_extr_params()
     else
         throw verror << "Couldn't set Lidar Extrinsic Parameters((";
 }
-
+//=======================================================================================
 void Lidar::_set_weather_suppress( const Turn turn )
 {
-    Head head;
-    head.version  = kSdkVer0;
+    Frame<CmdWeatherSuppression> head;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    LidarWeatherSuppress sup;
+    CmdWeatherSuppression sup;
     sup.state = turn;
 
     auto dgram = head.encode( sup );

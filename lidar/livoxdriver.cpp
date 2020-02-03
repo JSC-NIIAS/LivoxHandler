@@ -11,19 +11,14 @@ LivoxDriver::LivoxDriver( Config& config,
     , _info    ( info         )
     , _seq_num ( info.seq_num )
 {
-    _scatter = new CustomScatter( 1000, _info.broadcast_code );
-
-    _data_timer = new QTimer( this );
-    _data_timer->start( data_ms );
-
-    connect( _data_timer, &QTimer::timeout,
-             [this]
-    {
-        _scatter->plot_pnts( convert<LivoxSpherPoint, LivoxRawPoint>( _pnts ) );
-        _pnts.clear();
-    });
+    _container = new LivoxContainer( _info.broadcast_code, this );
 
     _seq_num++;
+
+    connect( this, &LivoxDriver::transmit_pnts, _container, &LivoxContainer::add_data );
+
+    connect( _container, &LivoxContainer::transmit_packet_pnts,
+             this, &LivoxDriver::transmit_packet_pnts );
 
     _init_listen_ports();
     _set_handshake();
@@ -79,7 +74,7 @@ void LivoxDriver::_on_command()
 
         auto view = buf.view();
 
-        Head head;
+        Frame<AckHandshake> head;
         auto ok = head.decode( &view );
         if (!ok)
         {
@@ -88,7 +83,8 @@ void LivoxDriver::_on_command()
         }
 
         if ( head.cmd_set == kCommandSetGeneral &&
-             head.cmd_id  == kCommandIDGeneralHandshake )
+             head.cmd_id  == kCommandIDGeneralHandshake &&
+             !_was_lidar_init )
         {
             vdeb << "Handshake Successfull!";
 
@@ -113,16 +109,14 @@ void LivoxDriver::_on_data()
         auto byte_data = dgram.data();
         vbyte_buffer_view view( byte_data.data(), uint( byte_data.size() ) );
 
-        Package<LivoxSpherPoint> pack;
+        Package pack;
         pack.decode( &view );
 
-        _pnts.append( pack.pnts );
+        transmit_pnts( pack.pnts );
 
         vdeb << "Receive Point Cloud Data from "
              << _info.broadcast_code
              << " of size" << dgram.data().size() << pack.cat();
-
-        continue;
     }
 }
 //=======================================================================================
@@ -142,10 +136,7 @@ void LivoxDriver::_init_lidar()
 //=======================================================================================
 void LivoxDriver::_set_handshake()
 {
-    Cmd cmd( kCommandSetGeneral, kCommandIDGeneralHandshake );
-
-    Head head;
-    head.version  = kSdkVer0;
+    Frame<CmdHandshake> head;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeAck;
 
@@ -169,13 +160,11 @@ void LivoxDriver::_set_handshake()
 //=======================================================================================
 void LivoxDriver::_set_heartbeat()
 {
-    Head head;
-
-    head.version  = kSdkVer0;
-    head.cmd_type = kCommandTypeCmd;
+    Frame<CmdHeartbeat> head;
     head.seq_num  = _seq_num++;
+    head.cmd_type = kCommandTypeCmd;
 
-    auto dgram = head.encode( HeartBeat2{} );
+    auto dgram = head.encode( CmdHeartbeat() );
 
     auto sended = _sock_cmd->writeDatagram( dgram.data(),
                                             int(dgram.size()),
@@ -190,17 +179,14 @@ void LivoxDriver::_set_heartbeat()
 //=======================================================================================
 void LivoxDriver::_sampling( const LidarSample sample )
 {
-    Head head;
-    head.version  = kSdkVer0;
+    Frame<CmdSampling> head;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    Sampling samp;
+    CmdSampling samp;
     samp.sample_ctrl = sample;
 
     auto dgram = head.encode( samp );
-
-    vdeb << dgram.to_Hex();
 
     auto sended = _sock_cmd->writeDatagram( dgram.data(),
                                             int( dgram.size() ),
@@ -216,12 +202,12 @@ void LivoxDriver::_sampling( const LidarSample sample )
 //=======================================================================================
 void LivoxDriver::_change_coord_system( const PointDataType type )
 {
-    Head head;
+    Frame<CmdCoordinateSystem> head;
     head.version  = kSdkVer0;
     head.seq_num  = _seq_num++;
     head.cmd_type = kCommandTypeCmd;
 
-    CoordinateSystem system;
+    CmdCoordinateSystem system;
     system.coordinate_type = type;
 
     auto dgram = head.encode( system );
@@ -240,16 +226,75 @@ void LivoxDriver::_change_coord_system( const PointDataType type )
 //=======================================================================================
 void LivoxDriver::_set_mode( const LidarMode mode )
 {
+    Frame<CmdSetMode> head;
+    head.seq_num  = _seq_num++;
+    head.cmd_type = kCommandTypeCmd;
 
+    CmdSetMode lidar;
+    lidar.lidar_mode = LidarMode::kLidarModeNormal;
+
+    auto dgram = head.encode( lidar );
+
+    auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
+                                            int( dgram.size() ),
+                                            _info.address,
+                                            livox_port );
+    if ( sended == int( dgram.size() ) )
+        vdeb << "Set Lidar " << _info.broadcast_code << " Mode: " << mode;
+    else
+        throw verror << "Couldn't set Lidar " << _info.broadcast_code << " Mode((";
 }
 //=======================================================================================
 void LivoxDriver::_set_extr_params()
 {
+    Frame<CmdWriteExtrinsicParams> head;
+    head.seq_num  = _seq_num++;
+    head.cmd_type = kCommandTypeCmd;
 
+    CmdWriteExtrinsicParams eparams;
+    {
+        eparams.roll  = _conf->offset.roll;
+        eparams.pitch = _conf->offset.pitch;
+        eparams.yaw   = _conf->offset.yaw;
+        eparams.x = _conf->offset.x;
+        eparams.y = _conf->offset.y;
+        eparams.z = _conf->offset.z;
+    }
+
+    auto dgram = head.encode( eparams );
+
+    auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
+                                            int( dgram.size() ),
+                                            _info.address,
+                                            livox_port );
+    if ( sended == int( dgram.size() ) )
+        vdeb << "Set Lidar " << _info.broadcast_code << " Extrinsic Parameters: ";
+    else
+        throw verror << "Couldn't set Lidar "
+                     << _info.broadcast_code
+                     << " Extrinsic Parameters((";
 }
 //=======================================================================================
 void LivoxDriver::_set_weather_suppress( const Turn turn )
 {
+    Frame<CmdWeatherSuppression> head;
+    head.seq_num  = _seq_num++;
+    head.cmd_type = kCommandTypeCmd;
 
+    CmdWeatherSuppression sup;
+    sup.state = turn;
+
+    auto dgram = head.encode( sup );
+
+    auto sended = _sock_cmd->writeDatagram( dgram.str().c_str(),
+                                            int( dgram.size() ),
+                                            _info.address,
+                                            livox_port );
+    if ( sended == int( dgram.size() ) )
+        vdeb << "Set Lidar " << _info.broadcast_code << " Rain/Fog Suppression: " << turn;
+    else
+        throw verror << "Couldn't set Lidar "
+                     << _info.broadcast_code
+                     << " Rain/Fog Suppression((";
 }
 //=======================================================================================

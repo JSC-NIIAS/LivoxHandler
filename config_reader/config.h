@@ -55,6 +55,7 @@ public:
     {
         QString pid_path;
         bool    need_trace;
+        int     freequency;
 
     } main_params;
 

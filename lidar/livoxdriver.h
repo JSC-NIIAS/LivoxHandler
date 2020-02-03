@@ -2,9 +2,10 @@
 #define LIVOXDRIVER_H
 
 #include "defs.h"
-#include "customscatter.h"
 #include "config.h"
 #include "converter.h"
+#include "livoxcontainer.h"
+#include "livoxmessages.h"
 
 #include "vlog.h"
 #include "vcat.h"
@@ -29,19 +30,24 @@ public:
 
     //-----------------------------------------------------------------------------------
 
+signals:
+
+    void transmit_pnts( const QList<LivoxSpherPoint>& );
+    void transmit_packet_pnts( const QList<LivoxSpherPoint>& );
+
+    //-----------------------------------------------------------------------------------
+
 private:
 
     Config *_conf = nullptr;
     BroabcastInfo _info;
-    CustomScatter *_scatter = nullptr;
-    QList<LivoxSpherPoint> _pnts;
+    LivoxContainer *_container = nullptr;
 
     bool _was_lidar_init = false;
 
     QUdpSocket *_sock_data = nullptr;
     QUdpSocket *_sock_cmd = nullptr;
     QTimer *_heart_timer = nullptr;
-    QTimer *_data_timer = nullptr;
 
     uint16_t _seq_num;
 

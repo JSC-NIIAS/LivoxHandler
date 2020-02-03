@@ -41,7 +41,7 @@ void LivoxBroadcaster::_get()
         auto byte_data = dgram.data();
         vbyte_buffer_view view( byte_data.data(), uint(byte_data.size()) );
 
-        Frame<BroabcastMessage> frame;
+        Frame<MsgBroadcast> frame;
         auto ok = frame.decode( &view );
 
         if ( !ok )
@@ -66,13 +66,13 @@ void LivoxBroadcaster::_get()
             return;
         }
 
-        if ( frame.data.cmd.cmd_set != kCommandSetGeneral )
+        if ( frame.data.cmd_set != kCommandSetGeneral )
         {
             vwarning << "cmd_set != livox::kCommandSetGeneral";
             return;
         }
 
-        if ( frame.data.cmd.cmd_id != kCommandIDGeneralBroadcast )
+        if ( frame.data.cmd_id != kCommandIDGeneralBroadcast )
         {
             vwarning << "cmd_id != livox::kCommandIDGeneralBroadcast";
             return;

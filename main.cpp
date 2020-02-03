@@ -1,8 +1,8 @@
-#include "defs.h"
 #include "lidar.h"
 #include "config.h"
 #include "livoxbroadcaster.h"
 #include "livoxdriver.h"
+#include "livoxmessages.h"
 
 #include "vlog.h"
 #include "vbyte_buffer.h"

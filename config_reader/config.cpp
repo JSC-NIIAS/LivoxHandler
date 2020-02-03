@@ -30,6 +30,7 @@ Config::Config( const QString& fname, QObject* parent )
         _settings->beginGroup( "main_params" );
         main_params.pid_path = _settings->value( "pid_path", "" ).toString();
         main_params.need_trace = _settings->value( "need_trace", "" ).toBool();
+        main_params.freequency = _settings->value( "freequency", "" ).toInt();
         _settings->endGroup();
 
         _settings->beginGroup( "offset" );

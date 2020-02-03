@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "defs.h"
+#include "livoxmessages.h"
 
 #include <QObject>
 #include <QHostAddress>
