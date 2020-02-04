@@ -15,9 +15,9 @@ CustomScatter::CustomScatter( const int plot_time, const QString& name )
     this->axisY()->setTitle("Y");
     this->axisZ()->setTitle("Z");
 
-    this->axisX()->setRange( - 5000, 5000 );
-    this->axisY()->setRange( 0, 30000 );
-    this->axisZ()->setRange( - 1000, 5000 );
+//    this->axisX()->setRange( - 5000, 5000 );
+//    this->axisY()->setRange( 0, 30000 );
+//    this->axisZ()->setRange( - 1000, 5000 );
 
     this->setShadowQuality( QAbstract3DGraph::ShadowQualityNone );
 
@@ -55,17 +55,16 @@ CustomScatter::~CustomScatter()
 
 //=======================================================================================
 #include <iostream>
-void CustomScatter::plot_pnts( const QList<LivoxRawPoint>& pnts )
+void CustomScatter::plot_pnts( const QList<Pack>& packs )
 {
-    if ( pnts.empty() )
+    if ( packs.empty() )
         return;
 
     _data.clear();
 
-    for ( const auto& pnt: pnts )
-        _data << QVector3D( - pnt.y, pnt.x, pnt.z );
-
-//    _layer->dataProxy()->addItems( _data );
+    for ( const auto& pack: packs )
+        for ( const auto& pnt: pack.pnts )
+            _data << QVector3D( pnt.x, pnt.y, pnt.z );
 
     fill_layer( _data, *_layer );
 }

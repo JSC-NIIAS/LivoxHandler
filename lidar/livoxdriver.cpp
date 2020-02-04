@@ -12,14 +12,21 @@ LivoxDriver::LivoxDriver( Config& config,
     , _seq_num  ( info.seq_num  )
     , _dev_type ( info.dev_type )
 {
-    _container = new LivoxContainer( _info.broadcast_code, this );
+    _container = new LivoxContainer( config, _info.broadcast_code, this );
 
     _seq_num++;
 
-    connect( this, &LivoxDriver::transmit_pnts, _container, &LivoxContainer::add_data );
+    connect( this, &LivoxDriver::transmit_point_cloud,
+             _container, &LivoxContainer::add_pack );
 
-    connect( _container, &LivoxContainer::transmit_packet_pnts,
-             this, &LivoxDriver::transmit_packet_pnts );
+    connect( this, &LivoxDriver::transmit_info,
+             _container, &LivoxContainer::set_info );
+
+    connect( this, &LivoxDriver::transmit_imu,
+             _container, &LivoxContainer::set_imu );
+
+//    connect( _container, &LivoxContainer::transmit_packet_pnts,
+//             this, &LivoxDriver::transmit_packet_pnts );
 
     _init_listen_ports();
     _set_handshake();
@@ -113,7 +120,8 @@ void LivoxDriver::_on_data()
         Package<LivoxSpherPoint> pack;
         pack.decode( &view );
 
-        transmit_pnts( pack.pnts );
+        transmit_point_cloud( convert<Package<LivoxSpherPoint>>( pack ) );
+        transmit_info( pack.status_code, pack.timestamp );
 
         vdeb << "Receive Point Cloud Data from "
              << _info.broadcast_code

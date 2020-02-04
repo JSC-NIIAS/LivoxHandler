@@ -9,7 +9,7 @@ isEmpty( def_vlibs )
 
     include( $$VLIBS_DIR/qmake/vlog.pri )
     include( $$VLIBS_DIR/qmake/vbyte_buffer.pri )
-#    include( $$VLIBS_DIR/qmake/ )
+    include( $$VLIBS_DIR/qmake/vchrono.pri )
 
     isEmpty( def_not_print_pri_messages ): message( "----- VLIBS appended -----" )
 }

@@ -10,7 +10,6 @@ DEFINES += WITH_GUI
 
 QT += core
 QT -= gui
-QT += widgets
 QT += network
 
 #========================================================================================
@@ -32,6 +31,14 @@ include( $$SDK_DIR/sdk_core/sdk_core.pri )
 VLIBS_DIR = $$PWD/vlibs2
 include( $$PWD/vlibs.pri )
 
+ZCM_Dir = /usr/local
+INCLUDEPATH += $$ZCM_Dir/include/
+LIBS += -L$$ZCM_Dir/lib -lzcm
+
+ZCM_DIR = $$PWD/zcm_types
+include( $$PWD/zcm_types.pri )
+LIBS += -L$$ZCM_DIR -lzcmtypes
+
 #========================================================================================
 
 SOURCES += main.cpp
@@ -42,6 +49,7 @@ include( $$PWD/config_reader/config_reader.pri )
 include( $$PWD/lidar/lidar.pri )
 include( $$PWD/plot/plot.pri )
 include( $$PWD/defs/defs.pri )
+include( $$PWD/publish/publish.pri )
 
 #========================================================================================
 
@@ -49,4 +57,3 @@ OTHER_FILES += cfg/*
 OTHER_FILES += scripts/*
 
 #========================================================================================
-

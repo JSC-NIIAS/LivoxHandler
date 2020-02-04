@@ -3,15 +3,14 @@
 #include <QCoreApplication>
 
 //=======================================================================================
-Config::Config( const QString& fname, QObject* parent )
-    : QObject ( parent )
+Config::Config( const QString& fname )
 {
     if ( fname.isEmpty() )
         _make_default_path();
     else
         _default_path = fname;
 
-    _settings = new QSettings( _default_path, QSettings::IniFormat, this );
+    _settings = new QSettings( _default_path, QSettings::IniFormat );
 
     if ( _settings->status() != QSettings::NoError )
         throw verror << "No config specified for path: " << fname;
@@ -24,13 +23,17 @@ Config::Config( const QString& fname, QObject* parent )
         _settings->beginGroup( "zcm_send" );
         zcm_send.target = _settings->value( "target", "" ).toString();
         zcm_send.prefix = _settings->value( "prefix", "" ).toString();
-        zcm_send.channel = _settings->value( "channel", "" ).toString();
+        zcm_send.data_channel = _settings->value( "data_channel", "" ).toString();
+        zcm_send.imu_channel = _settings->value( "imu_channel", "" ).toString();
+        zcm_send.info_channel = _settings->value( "info_channel", "" ).toString();
         _settings->endGroup();
 
         _settings->beginGroup( "main_params" );
         main_params.pid_path = _settings->value( "pid_path", "" ).toString();
         main_params.need_trace = _settings->value( "need_trace", "" ).toBool();
-        main_params.freequency = _settings->value( "freequency", "" ).toInt();
+        main_params.data_freequency = 1000 / _settings->value( "data_freequency", "" ).toInt();
+        main_params.imu_freequency = 1000 / _settings->value( "imu_freequency", "" ).toInt();
+        main_params.info_freequency = 1000 / _settings->value( "info_freequency", "" ).toInt();
         _settings->endGroup();
 
         _settings->beginGroup( "offset" );
@@ -66,7 +69,9 @@ void Config::to_file( const QString& fname )
         settings.beginGroup( "zcm_send" );
         settings.setValue( "target", QString( "ipc" ) );
         settings.setValue( "prefix", QString( "Lidar" ) );
-        settings.setValue( "channel", QString( "LivoxData" ) );
+        settings.setValue( "data_channel", QString( "LivoxData" ) );
+        settings.setValue( "imu_channel", QString( "LivoxIMU" ) );
+        settings.setValue( "info_channel", QString( "LivoxInfo" ) );
         settings.endGroup();
     }
 
@@ -74,6 +79,9 @@ void Config::to_file( const QString& fname )
         settings.beginGroup( "main_params" );
         settings.setValue( "pid_path", QString( "/tmp/niias" ) );
         settings.setValue( "need_trace", bool( true ) );
+        settings.setValue( "data_freequency", int(10) );
+        settings.setValue( "imu_freequency", int(10) );
+        settings.setValue( "info_freequency", int(1) );
         settings.endGroup();
     }
 
@@ -91,7 +99,6 @@ void Config::to_file( const QString& fname )
     {
         settings.beginGroup( "lidar_params" );
         settings.setValue( "weather_suppress", bool( false ) );
-        settings.setValue( "point_type", int(1) );
         settings.endGroup();
     }
 
@@ -115,6 +122,11 @@ void Config::ip( const QHostAddress& ip )
 bool Config::contains( const QString& broadcast )
 {
     return _broadcast_list.contains( broadcast );
+}
+//=======================================================================================
+void Config::deb()
+{
+
 }
 //=======================================================================================
 

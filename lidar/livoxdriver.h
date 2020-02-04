@@ -32,8 +32,10 @@ public:
 
 signals:
 
-    void transmit_pnts( const QList<LivoxSpherPoint>& );
-    void transmit_packet_pnts( const QList<LivoxSpherPoint>& );
+    void transmit_point_cloud( const Pack& );
+    void transmit_info( const LidarErrorCode&, const uint64_t );
+    void transmit_imu( const LivoxImuPoint& );
+    void transmit_packet_pnts( const QList<Package<LivoxSpherPoint>>& );
 
     //-----------------------------------------------------------------------------------
 

@@ -1,39 +1,15 @@
 #ifndef CUSTOMSCATTER_H
 #define CUSTOMSCATTER_H
 
+#include "defs.h"
+
 #include <Q3DScatter>
 #include <QWidget>
 #include <QObject>
 #include <QTimer>
 #include <QList>
 
-#include "livox_def.h"
-
 using namespace QtDataVisualization;
-
-//=======================================================================================
-
-struct DrawPloperty
-{
-    QString      legend_name;
-    std::string  fn_name;
-
-    QColor       color;
-
-    bool need_new_graph = false;
-    bool need_replot = false;
-    bool need_gr_clear = false;
-    bool need_leg_clear = false;
-    bool need_match = false;
-    bool need_track = false;
-    bool need_lidar = false;
-    bool need_switch = false;
-    bool need_balise = false;
-    bool check_cam_dist = false;
-    bool has_ground = true;
-
-    int layer = 0;
-};
 
 //=======================================================================================
 class CustomScatter : public Q3DScatter
@@ -50,7 +26,7 @@ public:
 
 public slots:
 
-    void plot_pnts( const QList<LivoxRawPoint>& pnts );
+    void plot_pnts( const QList<Pack>& packs );
 
     //-----------------------------------------------------------------------------------
 
