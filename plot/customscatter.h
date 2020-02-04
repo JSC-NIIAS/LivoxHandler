@@ -18,7 +18,7 @@ class CustomScatter : public Q3DScatter
 
 public:
 
-    CustomScatter( const int plot_time, const QString& name );
+    CustomScatter( const int plot_time, const QString& name = {} );
 
     ~CustomScatter();
 

@@ -11,6 +11,7 @@
 #include "vcat.h"
 #include "vbyte_buffer.h"
 #include "vbyte_buffer_view.h"
+#include "vtime_point.h"
 
 #include <QObject>
 #include <QUdpSocket>
@@ -32,7 +33,7 @@ public:
 
 signals:
 
-    void transmit_point_cloud( const Pack& );
+    void transmit_point_cloud( const Pack&, const int32_t );
     void transmit_info( const LidarErrorCode&, const uint64_t );
     void transmit_imu( const LivoxImuPoint& );
     void transmit_packet_pnts( const QList<Package<LivoxSpherPoint>>& );

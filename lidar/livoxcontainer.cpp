@@ -26,10 +26,12 @@ LivoxContainer::LivoxContainer( const Config& conf,
     connect( _data_timer, &QTimer::timeout,
              [this]
     {
+#ifdef WITH_GUI
         _scatter->plot_pnts( _packs );
+#endif
         emit transmit_packet_pnts( _packs );
 
-        _pub->send_point_cloud( _packs );
+        _pub->send_point_cloud( _packs, capture_time );
 
         _packs.clear();
     } );
@@ -41,18 +43,19 @@ LivoxContainer::LivoxContainer( const Config& conf,
     } );
 
     connect( _info_timer, &QTimer::timeout,
-             [this]
+             [&]
     {
-        _pub->send_info( _sensor_info );
+        _pub->send_info( _sensor_info, broadcast );
     } );
 }
 //=======================================================================================
 
 
 //=======================================================================================
-void LivoxContainer::add_pack( const Pack& data )
+void LivoxContainer::add_pack( const Pack& data, const int32_t ts )
 {
     _packs.append( data );
+    capture_time = ts;
 }
 //=======================================================================================
 void LivoxContainer::set_imu( const LivoxImuPoint& pnt )

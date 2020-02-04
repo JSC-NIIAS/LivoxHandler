@@ -37,9 +37,9 @@ public:
 
 public slots:
 
-    void send_point_cloud( const QList<Pack>& data );
+    void send_point_cloud( const QList<Pack>& data, const int32_t capture );
     void send_imu_data();
-    void send_info( const LidarStatus& code );
+    void send_info( const LidarStatus& code, const QString broadcast );
 
     //-----------------------------------------------------------------------------------
 

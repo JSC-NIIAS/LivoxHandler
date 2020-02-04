@@ -17,7 +17,7 @@ public:
 
     Config( const QString& fname = {} );
 
-    static void to_file( const QString& fname );
+    static void to_file( const QString& fname = {} );
 
     bool contains( const QString& broadcast );
 
@@ -56,12 +56,12 @@ public:
             return prefix + imu_channel;
         }
 
-    } zcm_send;
+        QString info_ch() const
+        {
+            return prefix + info_channel;
+        }
 
-    QString send_info_ch() const
-    {
-        return zcm_send.prefix + zcm_send.info_channel + receive.broadcast;
-    }
+    } zcm_send;
 
     //-----------------------------------------------------------------------------------
 

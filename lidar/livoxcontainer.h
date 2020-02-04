@@ -14,6 +14,7 @@
 #include "livox_def.h"
 
 #include <QObject>
+#include <QTimer>
 
 //=======================================================================================
 class LivoxContainer : public QObject
@@ -33,7 +34,7 @@ signals:
 
 public slots:
 
-    void add_pack( const Pack& data );
+    void add_pack( const Pack& data, const int32_t ts );
     void set_imu( const LivoxImuPoint& pnt );
     void set_info( const LidarErrorCode& code, const uint64_t ts );
 
@@ -52,6 +53,7 @@ private:
     QTimer *_info_timer = nullptr;
 
     QList<Pack> _packs;
+    int32_t capture_time;
     QList<LivoxImuPoint>   _imu_pnts;
     LidarStatus _sensor_info;
 

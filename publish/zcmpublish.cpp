@@ -19,7 +19,7 @@ ZcmPublish::~ZcmPublish()
 
 
 //=======================================================================================
-void ZcmPublish::send_point_cloud( const QList<Pack>& data )
+void ZcmPublish::send_point_cloud( const QList<Pack>& data, const int32_t capture )
 {
     if ( data.empty() )
         return;
@@ -70,8 +70,11 @@ void ZcmPublish::send_point_cloud( const QList<Pack>& data )
 
     msg.points_count = int32_t( msg.points.size() );
 
-    msg.service.u_timestamp = min_ts;
-    msg.service.processing_time = int32_t( vsystem_time_point::now().nanoseconds().count() - min_ts );
+    msg.service.u_timestamp = min_ts / 1000;
+
+    auto now = vsystem_time_point::now().microseconds().count();
+
+    msg.service.processing_time = int32_t( now - capture );
 
     _zcm.publish( _conf.zcm_send.data_ch().toStdString(), &msg );
 }
@@ -83,7 +86,7 @@ void ZcmPublish::send_imu_data()
 //    _zcm->publish( _conf.zcm_send.imu_ch().toStdString(), &msg );
 }
 //=======================================================================================
-void ZcmPublish::send_info( const LidarStatus& status )
+void ZcmPublish::send_info(const LidarStatus& status , const QString broadcast)
 {
     ZcmDeviceInfo msg;
 
@@ -102,6 +105,6 @@ void ZcmPublish::send_info( const LidarStatus& status )
 
     msg.timestamp = int64_t( status.timestamp );
 
-    _zcm.publish( _conf.send_info_ch().toStdString(), &msg );
+    _zcm.publish( QString( _conf.zcm_send.info_ch() + broadcast ).toStdString() , &msg );
 }
 //=======================================================================================

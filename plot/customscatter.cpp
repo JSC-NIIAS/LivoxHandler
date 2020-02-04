@@ -5,6 +5,8 @@ using namespace QtDataVisualization;
 //=======================================================================================
 CustomScatter::CustomScatter( const int plot_time, const QString& name )
 {
+    this->setTitle( name );
+
     this->setFlags( this->flags() ^ Qt::FramelessWindowHint );
 
     this->setPosition( { 900, 10 } );
@@ -32,7 +34,7 @@ CustomScatter::CustomScatter( const int plot_time, const QString& name )
 
     _layer->dataProxy()->addItems( _data );
     _layer->setBaseColor( qcolors.at( 1 ) );
-    _layer->setItemSize( 0.05 );
+    _layer->setItemSize( 0.05f );
     _layer->setMesh( QAbstract3DSeries::MeshPoint );
 
     _plot_timer = new QTimer( this );

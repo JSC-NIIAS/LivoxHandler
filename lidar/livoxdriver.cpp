@@ -112,6 +112,8 @@ void LivoxDriver::_on_data()
 {
     while ( _sock_data->hasPendingDatagrams() )
     {
+        auto now = vsystem_time_point::now().microseconds().count();
+
         auto dgram = _sock_data->receiveDatagram();
 
         auto byte_data = dgram.data();
@@ -120,7 +122,7 @@ void LivoxDriver::_on_data()
         Package<LivoxSpherPoint> pack;
         pack.decode( &view );
 
-        transmit_point_cloud( convert<Package<LivoxSpherPoint>>( pack ) );
+        transmit_point_cloud( convert<Package<LivoxSpherPoint>>( pack ), now );
         transmit_info( pack.status_code, pack.timestamp );
 
         vdeb << "Receive Point Cloud Data from "
