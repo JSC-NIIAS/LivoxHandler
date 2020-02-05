@@ -51,13 +51,7 @@ git clone ssh://git@bb.niias:7999/ado/lidar_livox.git
 cd lidar_livox
 git checkout develop
 ./scripts/update_submodules.sh
-cd livox_sdk/build
-PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/apr/lib/pkgconfig/ && export PKG_CONFIG_PATH
-cmake ..
-make
-sudo make install
 ```
-As the PKG_CONFIG_PATH will only take effect on the current terminal, you will need to run `PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/apr/lib/pkgconfig/ && export PKG_CONFIG_PATH` on every new shell, unless you add this line to your .bashrc as an environment variable.
 
 ---
 
