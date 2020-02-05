@@ -10,16 +10,18 @@
 
 //=======================================================================================
 
-class Config : public QObject
+class Config
 
 {
-    Q_OBJECT
-
 public:
 
-    explicit Config( const QString& fname = {}, QObject* parent = nullptr );
+    Config( const QString& fname = {} );
 
-    static void to_file( const QString& fname );
+    static void to_file( const QString& fname = {} );
+
+    bool contains( const QString& broadcast );
+
+    void deb();
 
     //-----------------------------------------------------------------------------------
 
@@ -40,11 +42,23 @@ public:
     {
         QString target;
         QString prefix;
-        QString channel;
+        QString data_channel;
+        QString imu_channel;
+        QString info_channel;
 
         QString data_ch() const
         {
-            return prefix + channel;
+            return prefix + data_channel;
+        }
+
+        QString imu_ch() const
+        {
+            return prefix + imu_channel;
+        }
+
+        QString info_ch() const
+        {
+            return prefix + info_channel;
         }
 
     } zcm_send;
@@ -55,7 +69,9 @@ public:
     {
         QString pid_path;
         bool    need_trace;
-        int     freequency;
+        int     data_freequency;
+        int     imu_freequency;
+        int     info_freequency;
 
     } main_params;
 
@@ -77,13 +93,8 @@ public:
     struct lidar_params
     {
         bool weather_suppress;
-        int  point_type;
 
     } lidar_params;
-
-    //-----------------------------------------------------------------------------------
-
-    bool contains( const QString& broadcast );
 
     //-----------------------------------------------------------------------------------
 

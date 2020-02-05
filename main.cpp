@@ -4,15 +4,23 @@
 #include "livoxmessages.h"
 
 #include "vlog.h"
+#include "vgit.h"
 #include "vbyte_buffer.h"
 #include "vbyte_buffer_view.h"
 
+#ifdef WITH_GUI
 #include <QApplication>
+#else
+#include <QCoreApplication>
+#endif
+
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 #include <QNetworkInterface>
 #include <QStringList>
 #include <QSettings>
+#include <QString>
+#include <QMap>
 
 using namespace std;
 
@@ -21,7 +29,13 @@ using DriverList = QMap<QString, LivoxDriver*>;
 //=======================================================================================
 int main( int argc, char **argv )
 {
+    QCoreApplication::setOrganizationName( "JSC NIIAS" );
+
+#ifdef WITH_GUI
     QApplication qapp( argc, argv );
+#else
+    QCoreApplication qapp( argc, argv );
+#endif
 
     //-----------------------------------------------------------------------------------
 
@@ -34,7 +48,35 @@ int main( int argc, char **argv )
 
     //-----------------------------------------------------------------------------------
 
-    Config config( cfg_path, &qapp );
+    Config config( cfg_path );
+
+    //-----------------------------------------------------------------------------------
+
+    //  Print conf & exit
+
+    if ( qargs.contains( "--print_conf" ) )
+    {
+        return 0;
+    }
+
+    //-----------------------------------------------------------------------------------
+
+    // Print version & exit
+
+    if ( qargs.contains( "-V" ) ||
+         qargs.contains( "--version" ) ||
+         qargs.contains( "--vgit" ) )
+        vdeb << vgit::as_message() << "\n\n";
+
+    //-----------------------------------------------------------------------------------
+
+    // Save default config as file & exit
+
+    if ( qargs.contains( "--save_conf" ) )
+    {
+        Config::to_file( cfg_path );
+        return 0;
+    }
 
     //-----------------------------------------------------------------------------------
 
@@ -45,10 +87,13 @@ int main( int argc, char **argv )
 
     //-----------------------------------------------------------------------------------
 
+    // For listen all livox datagrams in network area
     LivoxBroadcaster lbroadcast( config, &qapp );
 
+    // List of connected devices
     DriverList broabcast_list;
 
+    // Start listen datagrams on local port 55000
     QObject::connect( &lbroadcast, &LivoxBroadcaster::receive,
                       [&]( const BroabcastInfo& info )
     {

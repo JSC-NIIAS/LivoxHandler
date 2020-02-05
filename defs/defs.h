@@ -20,7 +20,7 @@
 static constexpr quint32 seed_16 = 0x4c49;
 static constexpr quint32 seed_32 = 0x564f580a;
 static constexpr auto heartbeat_ms = 800;
-static constexpr auto data_ms = 100;
+static constexpr auto delta_ns = 10;
 
 //=======================================================================================
 static uint16_t calc_crc16( const char* buf, size_t len )
@@ -103,6 +103,50 @@ struct BroabcastInfo
     uint16_t     seq_num;
     uint8_t      dev_type;
 };
+//=======================================================================================
+
+struct LidarStatus : LidarErrorCode
+{
+    uint64_t timestamp;
+
+    void operator=( const LidarErrorCode& code )
+    {
+        this->temp_status =      code.temp_status;
+        this->volt_status =      code.volt_status;
+        this->motor_status =     code.motor_status;
+        this->dirty_warn =       code.dirty_warn;
+        this->firmware_err =     code.firmware_err;
+        this->pps_status =       code.pps_status;
+        this->device_status =    code.device_status;
+        this->fan_status =       code.fan_status;
+        this->self_heating =     code.self_heating;
+        this->ptp_status =       code.ptp_status;
+        this->time_sync_status = code.time_sync_status;
+        this->system_status =    code.system_status;
+    }
+};
+
+//=======================================================================================
+
+struct Point : LivoxPoint
+{
+    uint8_t tag;
+};
+
+//=======================================================================================
+
+struct Pack
+{
+    uint8_t version;
+    uint8_t slot_id;
+    uint8_t lidar_id;
+    uint8_t timestamp_type;
+    uint8_t data_type;
+    uint64_t timestamp;
+
+    QList<Point> pnts;
+};
+
 //=======================================================================================
 
 #endif

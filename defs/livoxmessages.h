@@ -137,8 +137,6 @@ private:
 template <typename T>
 struct Package
 {
-    static auto constexpr delta_ns = 10;
-
     uint8_t version;
     uint8_t slot_id;
     uint8_t lidar_id;
