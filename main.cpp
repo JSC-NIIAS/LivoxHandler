@@ -87,10 +87,13 @@ int main( int argc, char **argv )
 
     //-----------------------------------------------------------------------------------
 
+    // For listen all livox datagrams in network area
     LivoxBroadcaster lbroadcast( config, &qapp );
 
+    // List of connected devices
     DriverList broabcast_list;
 
+    // Start listen datagrams on local port 55000
     QObject::connect( &lbroadcast, &LivoxBroadcaster::receive,
                       [&]( const BroabcastInfo& info )
     {

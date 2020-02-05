@@ -4,7 +4,7 @@ TARGET = lidar_livox
 
 #========================================================================================
 
-DEFINES -= WITH_GUI
+DEFINES += WITH_GUI
 
 #========================================================================================
 
@@ -49,9 +49,10 @@ SOURCES += main.cpp
 
 include( $$PWD/config_reader/config_reader.pri )
 include( $$PWD/lidar/lidar.pri )
-include( $$PWD/plot/plot.pri )
 include( $$PWD/defs/defs.pri )
 include( $$PWD/publish/publish.pri )
+
+contains( DEFINES, WITH_GUI ): include( $$PWD/plot/plot.pri )
 
 #========================================================================================
 
