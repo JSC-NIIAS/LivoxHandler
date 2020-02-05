@@ -1,17 +1,13 @@
 # lidar_livox
-> Service to handle Lidar Livox sensors data from models Mid-40, Mid-100, Horizon, Tele-15.
-
-![](http://bb.niias/projects/ADO/repos/lidar_livox/browse/docs/lidars.png)
+Service to handle Lidar Livox sensors data from models Mid-40, Mid-100, Horizon, Tele-15.
 
 **lidar_livox** is the software designed for all Livox products. It is developed based on Qt C++ following Livox SDK Communication logic, and provides easy-to-use Qt style API. With **lidar_livox**, users can quickly connect to Livox products, receive point cloud data and visualize them.
-
-![](http://bb.niias/projects/ADO/repos/lidar_livox/browse/docs/promo.png)
 
 ---
 
 ## Installation
 
->The installation procedures in Linux Ubuntu 16.04/14.04 32-bit LTS or Linux Mint 19.* 64-bit are shown here as examples.
+The installation procedures in Linux Ubuntu 16.04/14.04 32-bit LTS or Linux Mint 19.* 64-bit are shown here as examples.
 
 ### Dependencies
 
@@ -30,8 +26,6 @@ DEFINES += WITH_GUI
 and rebuild the project.
 
 ***Warning! Data visualization mode requires Qt Creator version 5.10.0 or more.* **
-
-![](http://bb.niias/projects/ADO/repos/lidar_livox/browse/docs/scan.png)
 
 #### ZCM:
 
@@ -86,11 +80,11 @@ Or using Qt Creator:
 
 Optional:
 
->```--vgit or -V or --version``` - print repository version (git hash).
+```--vgit or -V or --version``` - print repository version (git hash).
 *Example:* ```hash=abe5cf73f7371cb2551505e78561fbff4021b98d, branch=develop, revcount=36, date=2020-02-04 21:12:41 +0300, author-name=Dmitrii Leliuhin, author-email=dleliuhin@gmail.com, comptime=Feb  5 2020T11:31:00```
 
->```--print_conf``` - print config file and exit.
->```--save_conf``` - save default config as file & exit
+```--print_conf``` - print config file and exit.
+```--save_conf``` - save default config as file & exit.
 
 ### Config file setup
 
