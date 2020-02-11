@@ -18,7 +18,7 @@ class LivoxBroadcaster : public QObject
 public:
 
     explicit LivoxBroadcaster( Config& config,
-                               QObject *parent = nullptr );
+                               QObject* parent = nullptr );
 
     //-----------------------------------------------------------------------------------
 

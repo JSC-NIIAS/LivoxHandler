@@ -3,10 +3,9 @@
 using namespace std;
 
 //=======================================================================================
-ZcmPublish::ZcmPublish( const Config& conf, const QString channel )
+ZcmPublish::ZcmPublish( const Config& conf )
     : _conf    ( conf                               )
     , _zcm     ( conf.zcm_send.target.toStdString() )
-    , _channel ( channel                            )
 {
 
 }
@@ -86,8 +85,11 @@ void ZcmPublish::send_imu_data()
 //    _zcm->publish( _conf.zcm_send.imu_ch().toStdString(), &msg );
 }
 //=======================================================================================
-void ZcmPublish::send_info(const LidarStatus& status , const QString broadcast)
+void ZcmPublish::send_info( const LidarStatus& status , const QString& broadcast )
 {
+    if ( status.timestamp == 0 )
+        return;
+
     ZcmDeviceInfo msg;
 
     msg.temp_status =      status.temp_status;
