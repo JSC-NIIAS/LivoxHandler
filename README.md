@@ -65,6 +65,13 @@ git checkout develop
 ./scripts/build_all.sh
 ./scripts/run.sh
 ```
+Build project without updating submodules:
+```
+cd lidar_livox
+git checkout develop
+./scripts/build.sh
+```
+
 Or using Qt Creator:
 
 *Projects->Run->* and insert the code:

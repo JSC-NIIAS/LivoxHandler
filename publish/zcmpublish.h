@@ -29,9 +29,9 @@ class ZcmPublish : public QObject
 
 public:
 
-    explicit ZcmPublish( const Config& conf, const QString channel );
+    explicit ZcmPublish( const Config& conf );
 
-    virtual ~ZcmPublish();
+    ~ZcmPublish();
 
     //-----------------------------------------------------------------------------------
 
@@ -39,7 +39,7 @@ public slots:
 
     void send_point_cloud( const QList<Pack>& data, const int32_t capture );
     void send_imu_data();
-    void send_info( const LidarStatus& code, const QString broadcast );
+    void send_info( const LidarStatus& code, const QString& broadcast );
 
     //-----------------------------------------------------------------------------------
 
@@ -47,7 +47,6 @@ private:
 
     Config   _conf;
     zcm::ZCM _zcm;
-    QString  _channel;
 
 };
 

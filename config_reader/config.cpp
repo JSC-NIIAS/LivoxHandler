@@ -29,6 +29,7 @@ Config::Config( const QString& fname )
         _settings->endGroup();
 
         _settings->beginGroup( "main_params" );
+        main_params.ip = _settings->value( "ip", "" ).toString();
         main_params.pid_path = _settings->value( "pid_path", "" ).toString();
         main_params.need_trace = _settings->value( "need_trace", "" ).toBool();
         main_params.data_freequency = 1000 / _settings->value( "data_freequency", "" ).toInt();
@@ -77,6 +78,7 @@ void Config::to_file( const QString& fname )
 
     {
         settings.beginGroup( "main_params" );
+        settings.setValue( "ip", QString( "192.168.12.244" ) );
         settings.setValue( "pid_path", QString( "/tmp/niias" ) );
         settings.setValue( "need_trace", bool( true ) );
         settings.setValue( "data_freequency", int(10) );
@@ -115,6 +117,11 @@ QHostAddress Config::ip() const
 void Config::ip( const QHostAddress& ip )
 {
     _ip = ip;
+}
+//=======================================================================================
+void Config::ip_default()
+{
+    _ip = !main_params.ip.isEmpty() ? QHostAddress( main_params.ip ) : QHostAddress() ;
 }
 //=======================================================================================
 

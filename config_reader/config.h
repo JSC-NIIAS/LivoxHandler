@@ -27,6 +27,7 @@ public:
 
     QHostAddress ip() const;
     void ip( const QHostAddress& );
+    void ip_default();
 
     //-----------------------------------------------------------------------------------
 
@@ -67,6 +68,7 @@ public:
 
     struct main_params
     {
+        QString ip;
         QString pid_path;
         bool    need_trace;
         int     data_freequency;

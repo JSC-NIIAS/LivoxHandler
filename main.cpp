@@ -80,10 +80,14 @@ int main( int argc, char **argv )
 
     //-----------------------------------------------------------------------------------
 
+#ifdef WITH_GUI
     for ( const QHostAddress& address: QNetworkInterface::allAddresses() )
         if ( address.protocol() == QAbstractSocket::IPv4Protocol &&
              address != QHostAddress::LocalHost )
             config.ip( address );
+#else
+    config.ip_default();
+#endif
 
     //-----------------------------------------------------------------------------------
 

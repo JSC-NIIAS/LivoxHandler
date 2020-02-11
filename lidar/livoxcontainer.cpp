@@ -8,7 +8,7 @@ LivoxContainer::LivoxContainer( const Config& conf,
                                 QObject* parent )
     : QObject ( parent )
 {
-    _pub = new ZcmPublish( conf, conf.zcm_send.prefix );
+    _pub = new ZcmPublish( conf );
 
 #ifdef WITH_GUI
     _scatter = new CustomScatter( 1000, broadcast );
