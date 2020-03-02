@@ -40,9 +40,9 @@ QList<TO> convert( const QList<TI>& pnts )
             auto theta_rad = qDegreesToRadians( qreal( pnt.theta / 100. ) );
             auto phi_rad   = qDegreesToRadians( qreal( pnt.phi / 100. ) );
 
-            tmp.x = float( pnt.depth * qSin( theta_rad ) * qCos( phi_rad ) ) / 100;
-            tmp.y = float( pnt.depth * qSin( theta_rad ) * qSin( phi_rad ) ) / 100;
-            tmp.z = float( pnt.depth * qCos( theta_rad ) ) / 100;
+            tmp.x = float( pnt.depth * qSin( theta_rad ) * qCos( phi_rad ) ) / 1000;
+            tmp.y = float( pnt.depth * qSin( theta_rad ) * qSin( phi_rad ) ) / 1000;
+            tmp.z = float( pnt.depth * qCos( theta_rad ) ) / 1000;
 
             tmp.reflectivity = pnt.reflectivity;
 

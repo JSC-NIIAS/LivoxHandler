@@ -10,7 +10,7 @@ LivoxContainer::LivoxContainer( const Config& conf,
 {
     _pub = new ZcmPublish( conf );
 
-#ifdef WITH_GUI
+#ifdef GUI
     _scatter = new CustomScatter( 1000, broadcast );
 #endif
 
@@ -26,7 +26,7 @@ LivoxContainer::LivoxContainer( const Config& conf,
     connect( _data_timer, &QTimer::timeout,
              [this]
     {
-#ifdef WITH_GUI
+#ifdef GUI
         _scatter->plot_pnts( _packs );
 #endif
         emit transmit_packet_pnts( _packs );

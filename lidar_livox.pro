@@ -4,7 +4,7 @@ TARGET = lidar_livox
 
 #========================================================================================
 
-DEFINES -= WITH_GUI
+DEFINES += GUI
 
 #========================================================================================
 
@@ -39,7 +39,7 @@ LIBS += -L$$ZCM_Dir/lib -lzcm
 
 ZCM_DIR = $$PWD/zcm_types
 include( $$PWD/zcm_types.pri )
-LIBS += -L$$ZCM_DIR -lzcmtypes
+LIBS += -L$$ZCM_DIR
 
 #========================================================================================
 
@@ -52,7 +52,7 @@ include( $$PWD/lidar/lidar.pri )
 include( $$PWD/defs/defs.pri )
 include( $$PWD/publish/publish.pri )
 
-contains( DEFINES, WITH_GUI ): include( $$PWD/plot/plot.pri )
+contains( DEFINES, GUI ): include( $$PWD/plot/plot.pri )
 
 #========================================================================================
 

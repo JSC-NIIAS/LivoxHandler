@@ -1,7 +1,7 @@
 #ifndef LIVOXCONTAINER_H
 #define LIVOXCONTAINER_H
 
-#ifdef WITH_GUI
+#ifdef GUI
 #include "customscatter.h"
 #endif
 
@@ -42,7 +42,7 @@ public slots:
 
 private:
 
-#ifdef WITH_GUI
+#ifdef GUI
     CustomScatter *_scatter = nullptr;
 #endif
 

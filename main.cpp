@@ -8,7 +8,7 @@
 #include "vbyte_buffer.h"
 #include "vbyte_buffer_view.h"
 
-#ifdef WITH_GUI
+#ifdef GUI
 #include <QApplication>
 #else
 #include <QCoreApplication>
@@ -31,7 +31,7 @@ int main( int argc, char **argv )
 {
     QCoreApplication::setOrganizationName( "JSC NIIAS" );
 
-#ifdef WITH_GUI
+#ifdef GUI
     QApplication qapp( argc, argv );
 #else
     QCoreApplication qapp( argc, argv );
@@ -80,7 +80,7 @@ int main( int argc, char **argv )
 
     //-----------------------------------------------------------------------------------
 
-#ifdef WITH_GUI
+#ifdef GUI
     for ( const QHostAddress& address: QNetworkInterface::allAddresses() )
         if ( address.protocol() == QAbstractSocket::IPv4Protocol &&
              address != QHostAddress::LocalHost )
