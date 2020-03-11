@@ -12,7 +12,7 @@ LivoxDriver::LivoxDriver( Config& config,
     , _seq_num  ( info.seq_num  )
     , _dev_type ( info.dev_type )
 {
-    _container = new LivoxContainer( config, _info.broadcast_code, this );
+    _container = new LivoxContainer( config, _info, this );
 
     _seq_num++;
 
@@ -22,8 +22,9 @@ LivoxDriver::LivoxDriver( Config& config,
     connect( this, &LivoxDriver::transmit_info,
              _container, &LivoxContainer::set_info );
 
-    connect( this, &LivoxDriver::transmit_imu,
-             _container, &LivoxContainer::set_imu );
+    if ( _info.dev_type != kDeviceTypeLidarMid40 )
+        connect( this, &LivoxDriver::transmit_imu,
+                 _container, &LivoxContainer::set_imu );
 
     _init_listen_ports();
     _set_handshake();
@@ -158,14 +159,6 @@ void LivoxDriver::_set_handshake()
     auto dgram = head.encode();
 
     vdeb << dgram.to_Hex();
-
-    auto addr = _info.address.toString();
-    addr.remove( 0, 7 );
-
-    QString all = "ping -c 1 ";
-    all.append( addr );
-
-    system( all.toStdString().c_str() );
 
     auto sended = _sock_cmd->writeDatagram( dgram.data(),
                                             int( dgram.size() ),

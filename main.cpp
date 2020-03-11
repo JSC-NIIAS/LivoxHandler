@@ -102,12 +102,18 @@ int main( int argc, char **argv )
                       [&]( const BroabcastInfo& info )
     {
         if ( !config.contains( info.broadcast_code ) )
+        {
+            vdeb << "The Config doesn't contain" << info.broadcast_code;
             return - 1;
+        }
 
         else if ( config.contains( info.broadcast_code ) &&
                   !broabcast_list.contains( info.broadcast_code ) )
+        {
+            vdeb << "Register new Livox Driver with broadcast: " << info.broadcast_code;
             broabcast_list.insert( info.broadcast_code,
                                    new LivoxDriver( config, info, &qapp ) );
+        }
 
         else if ( config.contains( info.broadcast_code ) &&
                   broabcast_list.contains( info.broadcast_code ) )

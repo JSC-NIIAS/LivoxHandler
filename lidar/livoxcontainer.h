@@ -24,7 +24,7 @@ class LivoxContainer : public QObject
 public:
 
     explicit LivoxContainer( const Config& conf,
-                             const QString& broadcast = {},
+                             const BroabcastInfo& info,
                              QObject* parent = nullptr );
 
     //-----------------------------------------------------------------------------------
@@ -41,6 +41,8 @@ public slots:
     //-----------------------------------------------------------------------------------
 
 private:
+
+    BroabcastInfo _info;
 
 #ifdef GUI
     CustomScatter *_scatter = nullptr;

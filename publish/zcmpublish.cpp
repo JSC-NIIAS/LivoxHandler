@@ -82,10 +82,21 @@ void ZcmPublish::send_imu_data()
 {
     ZcmLivoxIMU msg;
 
-//    _zcm->publish( _conf.zcm_send.imu_ch().toStdString(), &msg );
+    msg.gyro_x = 0.0;
+    msg.gyro_y = 0.0;
+    msg.gyro_z = 0.0;
+
+    msg.acc_x = 0.0;
+    msg.acc_y = 0.0;
+    msg.acc_z = 0.0;
+
+    msg.service.u_timestamp = vtime_point::now().microseconds().count();
+    msg.service.processing_time = 0;
+
+    _zcm.publish( _conf.zcm_send.imu_ch().toStdString(), &msg );
 }
 //=======================================================================================
-void ZcmPublish::send_info( const LidarStatus& status, const QString& broadcast )
+void ZcmPublish::send_info( const LidarStatus& status )
 {
     if ( status.timestamp == 0 )
         return;
@@ -107,6 +118,6 @@ void ZcmPublish::send_info( const LidarStatus& status, const QString& broadcast 
 
     msg.timestamp = int64_t( status.timestamp );
 
-    _zcm.publish( QString( _conf.zcm_send.info_ch() + broadcast ).toStdString(), &msg );
+    _zcm.publish( _conf.zcm_send.info_ch().toStdString(), &msg );
 }
 //=======================================================================================
