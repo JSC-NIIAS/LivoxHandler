@@ -53,8 +53,8 @@ private:
     QTimer *_info_timer = nullptr;
 
     QList<Pack> _packs;
-    int32_t capture_time;
-    QList<LivoxImuPoint>   _imu_pnts;
+    int32_t _capture_time;
+    QList<LivoxImuPoint> _imu_pnts;
     LidarStatus _sensor_info;
 
 };

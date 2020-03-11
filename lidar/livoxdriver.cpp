@@ -25,9 +25,6 @@ LivoxDriver::LivoxDriver( Config& config,
     connect( this, &LivoxDriver::transmit_imu,
              _container, &LivoxContainer::set_imu );
 
-//    connect( _container, &LivoxContainer::transmit_packet_pnts,
-//             this, &LivoxDriver::transmit_packet_pnts );
-
     _init_listen_ports();
     _set_handshake();
 }
@@ -122,8 +119,8 @@ void LivoxDriver::_on_data()
         Package<LivoxSpherPoint> pack;
         pack.decode( &view );
 
-        transmit_point_cloud( convert<Package<LivoxSpherPoint>>( pack ), now );
-        transmit_info( pack.status_code, pack.timestamp );
+        emit transmit_point_cloud( convert<Package<LivoxSpherPoint>>( pack ), now );
+        emit transmit_info( pack.status_code, pack.timestamp );
 
         vdeb << "Receive Point Cloud Data from "
              << _info.broadcast_code
@@ -145,6 +142,7 @@ void LivoxDriver::_init_lidar()
 }
 //=======================================================================================
 
+#include <cstdlib>
 //=======================================================================================
 void LivoxDriver::_set_handshake()
 {
@@ -161,10 +159,19 @@ void LivoxDriver::_set_handshake()
 
     vdeb << dgram.to_Hex();
 
+    auto addr = _info.address.toString();
+    addr.remove( 0, 7 );
+
+    QString all = "ping -c 1 ";
+    all.append( addr );
+
+    system( all.toStdString().c_str() );
+
     auto sended = _sock_cmd->writeDatagram( dgram.data(),
                                             int( dgram.size() ),
                                             _info.address,
                                             livox_port );
+
     if ( sended == int( dgram.size() ) )
         vdeb << "Send Handshake Request to" << _info.broadcast_code;
     else

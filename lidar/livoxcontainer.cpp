@@ -31,7 +31,7 @@ LivoxContainer::LivoxContainer( const Config& conf,
 #endif
         emit transmit_packet_pnts( _packs );
 
-        _pub->send_point_cloud( _packs, capture_time );
+        _pub->send_point_cloud( _packs, _capture_time );
 
         _packs.clear();
     } );
@@ -55,7 +55,7 @@ LivoxContainer::LivoxContainer( const Config& conf,
 void LivoxContainer::add_pack( const Pack& data, const int32_t ts )
 {
     _packs.append( data );
-    capture_time = ts;
+    _capture_time = ts;
 }
 //=======================================================================================
 void LivoxContainer::set_imu( const LivoxImuPoint& pnt )

@@ -4,8 +4,8 @@ using namespace std;
 
 //=======================================================================================
 ZcmPublish::ZcmPublish( const Config& conf )
-    : _conf    ( conf                               )
-    , _zcm     ( conf.zcm_send.target.toStdString() )
+    : _conf ( conf                               )
+    , _zcm  ( conf.zcm_send.target.toStdString() )
 {
 
 }
@@ -85,7 +85,7 @@ void ZcmPublish::send_imu_data()
 //    _zcm->publish( _conf.zcm_send.imu_ch().toStdString(), &msg );
 }
 //=======================================================================================
-void ZcmPublish::send_info( const LidarStatus& status , const QString& broadcast )
+void ZcmPublish::send_info( const LidarStatus& status, const QString& broadcast )
 {
     if ( status.timestamp == 0 )
         return;
@@ -107,6 +107,6 @@ void ZcmPublish::send_info( const LidarStatus& status , const QString& broadcast
 
     msg.timestamp = int64_t( status.timestamp );
 
-    _zcm.publish( QString( _conf.zcm_send.info_ch() + broadcast ).toStdString() , &msg );
+    _zcm.publish( QString( _conf.zcm_send.info_ch() + broadcast ).toStdString(), &msg );
 }
 //=======================================================================================
