@@ -1,112 +1,79 @@
 #include "config.h"
 
 #include <QCoreApplication>
+#include <QNetworkInterface>
+#include <QVariant>
 
 //=======================================================================================
 Config::Config( const QString& fname )
+    : _settings( new vsettings )
 {
-    if ( fname.isEmpty() )
-        _make_default_path();
-    else
-        _default_path = fname;
+    _build();
 
-    _settings = new QSettings( _default_path, QSettings::IniFormat );
-
-    if ( _settings->status() != QSettings::NoError )
-        throw verror << "No config specified for path: " << fname;
-
+    if ( !fname.isEmpty() )
     {
-        _settings->beginGroup( "receive" );
-        receive.broadcast = _settings->value( "broadcast", "" ).toString();
-        _settings->endGroup();
-
-        _settings->beginGroup( "zcm_send" );
-        zcm_send.target = _settings->value( "target", "" ).toString();
-        zcm_send.prefix = _settings->value( "prefix", "" ).toString();
-        zcm_send.data_channel = _settings->value( "data_channel", "" ).toString();
-        zcm_send.imu_channel = _settings->value( "imu_channel", "" ).toString();
-        zcm_send.info_channel = _settings->value( "info_channel", "" ).toString();
-        _settings->endGroup();
-
-        _settings->beginGroup( "main_params" );
-        main_params.ip = _settings->value( "ip", "" ).toString();
-        main_params.pid_path = _settings->value( "pid_path", "" ).toString();
-        main_params.need_trace = _settings->value( "need_trace", "" ).toBool();
-        main_params.data_freequency = 1000 / _settings->value( "data_freequency", "" ).toInt();
-        main_params.imu_freequency = 1000 / _settings->value( "imu_freequency", "" ).toInt();
-        main_params.info_freequency = 1000 / _settings->value( "info_freequency", "" ).toInt();
-        _settings->endGroup();
-
-        _settings->beginGroup( "offset" );
-        offset.roll = _settings->value( "roll", "" ).toFloat();
-        offset.pitch = _settings->value( "pitch", "" ).toFloat();
-        offset.yaw = _settings->value( "yaw", "" ).toFloat();
-        offset.x = _settings->value( "x", "" ).toInt();
-        offset.y = _settings->value( "y", "" ).toInt();
-        offset.z = _settings->value( "z", "" ).toInt();
-        _settings->endGroup();
-
-        _settings->beginGroup( "lidar_params" );
-        lidar_params.weather_suppress = _settings->value( "weather_suppress", "" ).toBool();
-        _settings->endGroup();
+        _settings = new vsettings;
+        _settings->from_ini_file( fname.toStdString() );
     }
 
-    _broadcast_list.append( receive.broadcast );
+    for ( const auto key: _settings->subgroup( receive.str ).keys() )
+    {
+        QString broadcast( _settings->subgroup( receive.str ).get( key ).c_str() );
+
+        if ( !_settings->has_subgroup( broadcast.toStdString() ) )
+            continue;
+
+        auto group = _settings->subgroup( broadcast.toStdString() );
+
+        _broadcast_list[ broadcast ].x = std::stoi( group.get( "x" ) );
+        _broadcast_list[ broadcast ].y = std::stoi( group.get( "y" ) );
+        _broadcast_list[ broadcast ].z = std::stoi( group.get( "z" ) );
+        _broadcast_list[ broadcast ].roll  = std::stof( group.get( "roll" ) );
+        _broadcast_list[ broadcast ].pitch = std::stof( group.get( "pitch" ) );
+        _broadcast_list[ broadcast ].yaw   = std::stof( group.get( "yaw" ) );
+    }
+
+    {
+        auto group = _settings->subgroup( zcm_send.str );
+
+        zcm_send.target = QString( group.get( "target" ).c_str() );
+        zcm_send.prefix = QString( group.get( "prefix" ).c_str() );
+        zcm_send.data_channel = QString( group.get( "data_channel" ).c_str() );
+        zcm_send.imu_channel = QString( group.get( "imu_channel" ).c_str() );
+        zcm_send.info_channel = QString( group.get( "info_channel" ).c_str() );
+    }
+
+    {
+        auto group = _settings->subgroup( main_params.str );
+
+        main_params.ip = QString( group.get( "ip" ).c_str() );
+        main_params.pid_path = QString( group.get( "pid_path" ).c_str() );
+        main_params.data_freequency = QString( group.get( "data_freequency" ).c_str() ).toInt();
+        main_params.imu_freequency = QString( group.get( "imu_freequency" ).c_str() ).toInt();
+        main_params.info_freequency = QString( group.get( "info_freequency" ).c_str() ).toInt();
+    }
+
+    {
+        auto group = _settings->subgroup( lidar_params.str );
+
+        lidar_params.weather_suppress = QVariant( group.get( "weather_suppress" ).c_str() ).toBool();
+    }
+
+    ip( QHostAddress( main_params.ip ) );
+
+    if ( ip().isNull() )
+        for ( const QHostAddress& address: QNetworkInterface::allAddresses() )
+            if ( address.protocol() == QAbstractSocket::IPv4Protocol &&
+                 address != QHostAddress::LocalHost )
+                ip( address );
 }
 //=======================================================================================
 void Config::to_file( const QString& fname )
 {
-    QSettings settings( fname, QSettings::IniFormat );
-
-    settings.clear();
-
-    {
-        settings.beginGroup( "receive" );
-        settings.setValue( "broadcast", QString( "0TFDFCE00502151" ) );
-        settings.endGroup();
-    }
-
-    {
-        settings.beginGroup( "zcm_send" );
-        settings.setValue( "target", QString( "ipc" ) );
-        settings.setValue( "prefix", QString( "Lidar" ) );
-        settings.setValue( "data_channel", QString( "LivoxData" ) );
-        settings.setValue( "imu_channel", QString( "LivoxIMU" ) );
-        settings.setValue( "info_channel", QString( "LivoxInfo" ) );
-        settings.endGroup();
-    }
-
-    {
-        settings.beginGroup( "main_params" );
-        settings.setValue( "ip", QString( "192.168.12.244" ) );
-        settings.setValue( "pid_path", QString( "/tmp/niias" ) );
-        settings.setValue( "need_trace", bool( true ) );
-        settings.setValue( "data_freequency", int(10) );
-        settings.setValue( "imu_freequency", int(10) );
-        settings.setValue( "info_freequency", int(1) );
-        settings.endGroup();
-    }
-
-    {
-        settings.beginGroup( "offset" );
-        settings.setValue( "roll",  qreal( 0.0 ) );
-        settings.setValue( "pitch", qreal( 0.0 ) );
-        settings.setValue( "yaw",   qreal( 0.0 ) );
-        settings.setValue( "x",     int(0) );
-        settings.setValue( "y",     int(0) );
-        settings.setValue( "z",     int(0) );
-        settings.endGroup();
-    }
-
-    {
-        settings.beginGroup( "lidar_params" );
-        settings.setValue( "weather_suppress", bool( false ) );
-        settings.endGroup();
-    }
-
-    settings.sync();
+    _settings->to_ini_file( fname.toStdString() + ".cfg" );
 }
 //=======================================================================================
+
 
 //=======================================================================================
 QHostAddress Config::ip() const
@@ -119,11 +86,15 @@ void Config::ip( const QHostAddress& ip )
     _ip = ip;
 }
 //=======================================================================================
-void Config::ip_default()
+
+
+//=======================================================================================
+QMap<QString, Config::Offset> &Config::broadcasts()
 {
-    _ip = !main_params.ip.isEmpty() ? QHostAddress( main_params.ip ) : QHostAddress() ;
+    return _broadcast_list;
 }
 //=======================================================================================
+
 
 //=======================================================================================
 bool Config::contains( const QString& broadcast )
@@ -133,14 +104,40 @@ bool Config::contains( const QString& broadcast )
 //=======================================================================================
 void Config::deb()
 {
-
+    vdeb << _settings->to_ini();
 }
 //=======================================================================================
 
+
 //=======================================================================================
-void Config::_make_default_path()
+void Config::_build()
 {
-    _default_path = "../" + QCoreApplication::applicationName() +
-                    "/cfg/" + QCoreApplication::applicationName() + ".ini";
+    vsettings offset;
+    {
+        offset.set( "x", 0 );
+        offset.set( "y", 0 );
+        offset.set( "z", 0 );
+        offset.set( "roll", 0.0 );
+        offset.set( "pitch", 0.0 );
+        offset.set( "yaw", 0.0 );
+    }
+
+    _settings->subgroup( this->receive.str ).set( "broadcast_1", "***************" );
+
+    _settings->subgroup( this->zcm_send.str ).set( "target", "ipc" );
+    _settings->subgroup( this->zcm_send.str ).set( "prefix", "Lidar" );
+    _settings->subgroup( this->zcm_send.str ).set( "data_channel", "LivoxData" );
+    _settings->subgroup( this->zcm_send.str ).set( "imu_channel", "LivoxIMU" );
+    _settings->subgroup( this->zcm_send.str ).set( "info_channel", "LivoxInfo" );
+
+    _settings->subgroup( this->main_params.str ).set( "ip", "192.168.***.***" );
+    _settings->subgroup( this->main_params.str ).set( "pid_path", "/tmp/niias" );
+    _settings->subgroup( this->main_params.str ).set( "data_freequency", 10 );
+    _settings->subgroup( this->main_params.str ).set( "imu_freequency", 10 );
+    _settings->subgroup( this->main_params.str ).set( "info_freequency", 1 );
+
+    _settings->subgroup( this->lidar_params.str ).set( "weather_suppress", false );
+
+    _settings->subgroup( "broadcast_1" ) = offset;
 }
 //=======================================================================================

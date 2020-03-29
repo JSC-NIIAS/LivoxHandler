@@ -65,7 +65,7 @@ std::string CmdHandshake::cat()
     return vcat( " | user_ip: ", int( user_ip ),
                  " | data_port: ", int( data_port ),
                  " | cmd_port: ", int( cmd_port ),
-                 " | imu_port: ", int( imu_port ));
+                 " | imu_port: ", int( imu_port )).str();
 }
 //=======================================================================================
 
@@ -92,7 +92,7 @@ vbyte_buffer AckHandshake::encode()
 //=======================================================================================
 std::string AckHandshake::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -115,7 +115,7 @@ vbyte_buffer CmdQueryDeviceInfo::encode()
 //=======================================================================================
 std::string CmdQueryDeviceInfo::cat()
 {
-    return vcat();
+    return vcat().str();
 }
 //=======================================================================================
 
@@ -145,7 +145,7 @@ vbyte_buffer AckQueryDeviceInfo::encode()
 std::string AckQueryDeviceInfo::cat()
 {
     return vcat( " | ret_code: ", int( ret_code ),
-                 " | version: ", int( version ) );
+                 " | version: ", int( version ) ).str();
 }
 //=======================================================================================
 
@@ -168,7 +168,7 @@ vbyte_buffer CmdHeartbeat::encode()
 //=======================================================================================
 std::string CmdHeartbeat::cat()
 {
-    return vcat();
+    return vcat().str();
 }
 //=======================================================================================
 
@@ -204,7 +204,7 @@ std::string AckHeartbeat::cat()
     return vcat( " | ret_code: ", int( ret_code ),
                  " | work_state: ", int( work_state ),
                  " | feature_msg: ", int( feature_msg ),
-                 " | ack_msg: ", int( ack_msg ) );
+                 " | ack_msg: ", int( ack_msg ) ).str();
 }
 //=======================================================================================
 
@@ -231,7 +231,7 @@ vbyte_buffer CmdSampling::encode()
 //=======================================================================================
 std::string CmdSampling::cat()
 {
-    return vcat( " | sample_ctrl: ", int( sample_ctrl ) );
+    return vcat( " | sample_ctrl: ", int( sample_ctrl ) ).str();
 }
 //=======================================================================================
 
@@ -258,7 +258,7 @@ vbyte_buffer AckSampling::encode()
 //=======================================================================================
 std::string AckSampling::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -285,7 +285,7 @@ vbyte_buffer CmdCoordinateSystem::encode()
 //=======================================================================================
 std::string CmdCoordinateSystem::cat()
 {
-    return vcat( " | coordinate_type: ", int( coordinate_type ) );
+    return vcat( " | coordinate_type: ", int( coordinate_type ) ).str();
 }
 //=======================================================================================
 
@@ -312,7 +312,7 @@ vbyte_buffer AckCoordinateSystem::encode()
 //=======================================================================================
 std::string AckCoordinateSystem::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -335,7 +335,7 @@ vbyte_buffer CmdDisconnect::encode()
 //=======================================================================================
 std::string CmdDisconnect::cat()
 {
-    return vcat();
+    return vcat().str();
 }
 //=======================================================================================
 
@@ -362,7 +362,7 @@ vbyte_buffer AckDisconnect::encode()
 //=======================================================================================
 std::string AckDisconnect::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -389,7 +389,7 @@ vbyte_buffer MsgAbnormalStatusInfo::encode()
 //=======================================================================================
 std::string MsgAbnormalStatusInfo::cat()
 {
-    return vcat( " | status_code: ", int( status_code ) );
+    return vcat( " | status_code: ", int( status_code ) ).str();
 }
 //=======================================================================================
 
@@ -425,7 +425,7 @@ std::string CmdConfigureIP::cat()
     return vcat( " | ip_mode: ", int( ip_mode ),
                  " | ip_addr: ", int( ip_addr ),
                  " | net_mask: ", int( net_mask ),
-                 " | gw: ", int( gw_addr ) );
+                 " | gw: ", int( gw_addr ) ).str();
 }
 //=======================================================================================
 
@@ -452,7 +452,7 @@ vbyte_buffer AckConfigureIP::encode()
 //=======================================================================================
 std::string AckConfigureIP::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -475,7 +475,7 @@ vbyte_buffer CmdDeviceIPInfo::encode()
 //=======================================================================================
 std::string CmdDeviceIPInfo::cat()
 {
-    return vcat();
+    return vcat().str();
 }
 //=======================================================================================
 
@@ -514,7 +514,7 @@ std::string AckDeviceIPInfo::cat()
                  " | ip_mode: ", int( ip_mode ),
                  " | ip_addr: ", int( ip_addr ),
                  " | net_mask: ", int( net_mask ),
-                 " | gw: ", int( gw ) );
+                 " | gw: ", int( gw ) ).str();
 }
 //=======================================================================================
 
@@ -541,7 +541,7 @@ vbyte_buffer CmdRebootDevice::encode()
 //=======================================================================================
 std::string CmdRebootDevice::cat()
 {
-    return vcat( " | timeout: ", int( timeout ) );
+    return vcat( " | timeout: ", int( timeout ) ).str();
 }
 //=======================================================================================
 
@@ -568,6 +568,6 @@ vbyte_buffer AckRebootDevice::encode()
 //=======================================================================================
 std::string AckRebootDevice::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
