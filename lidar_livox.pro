@@ -4,7 +4,7 @@ TARGET = lidar_livox
 
 #========================================================================================
 
-DEFINES -= GUI
+DEFINES += GUI
 
 #========================================================================================
 
@@ -58,5 +58,11 @@ contains( DEFINES, GUI ): include( $$PWD/plot/plot.pri )
 
 OTHER_FILES += cfg/*
 OTHER_FILES += scripts/*
+
+#========================================================================================
+
+qnx: target.path = /tmp/$${TARGET}/bin
+else: unix:!android: target.path = /tmp/$${TARGET}/bin
+!isEmpty( target.path ): INSTALLS += target
 
 #========================================================================================

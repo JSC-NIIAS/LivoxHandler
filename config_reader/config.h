@@ -2,22 +2,22 @@
 #define CONFIG_H
 
 #include "vlog.h"
+#include "vsettings.h"
 
-#include <QObject>
 #include <QString>
-#include <QSettings>
 #include <QHostAddress>
 
 //=======================================================================================
 
 class Config
-
 {
 public:
 
     Config( const QString& fname = {} );
 
-    static void to_file( const QString& fname = {} );
+    //-----------------------------------------------------------------------------------
+
+    void to_file( const QString& fname = {} );
 
     bool contains( const QString& broadcast );
 
@@ -27,25 +27,28 @@ public:
 
     QHostAddress ip() const;
     void ip( const QHostAddress& );
-    void ip_default();
 
     //-----------------------------------------------------------------------------------
 
-    struct receive
+    struct Receive
     {
         QString broadcast;
+
+        std::string str = "receive";
 
     } receive;
 
     //-----------------------------------------------------------------------------------
 
-    struct zcm_send
+    struct ZcmSend
     {
         QString target;
         QString prefix;
         QString data_channel;
         QString imu_channel;
         QString info_channel;
+
+        std::string str = "zcm_send";
 
         QString data_ch() const
         {
@@ -66,20 +69,31 @@ public:
 
     //-----------------------------------------------------------------------------------
 
-    struct main_params
+    struct MainParams
     {
         QString ip;
         QString pid_path;
-        bool    need_trace;
         int     data_freequency;
         int     imu_freequency;
         int     info_freequency;
+
+        std::string str = "main_params";
 
     } main_params;
 
     //-----------------------------------------------------------------------------------
 
-    struct offset
+    struct LidarParams
+    {
+        bool weather_suppress;
+
+        std::string str = "lidar_params";
+
+    } lidar_params;
+
+    //-----------------------------------------------------------------------------------
+
+    struct Offset
     {
         float roll;
         float pitch;
@@ -88,31 +102,28 @@ public:
         int32_t y;
         int32_t z;
 
+        std::string str = "offset";
+
     } offset;
 
     //-----------------------------------------------------------------------------------
 
-    struct lidar_params
-    {
-        bool weather_suppress;
-
-    } lidar_params;
+    QMap<QString, Offset> & broadcasts();
 
     //-----------------------------------------------------------------------------------
 
 private:
 
-    QSettings *_settings = nullptr;
+    vsettings *_settings = nullptr;
 
-    QString _default_path;
-
-    QStringList _broadcast_list;
+    QMap<QString, Offset> _broadcast_list;
 
     QHostAddress _ip;
 
     //-----------------------------------------------------------------------------------
 
-    void _make_default_path();
+    void _build();
+
 };
 
 //=======================================================================================

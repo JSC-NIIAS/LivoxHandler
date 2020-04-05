@@ -4,24 +4,19 @@ using namespace zcm;
 
 //=======================================================================================
 LivoxContainer::LivoxContainer( const Config& conf,
-                                const QString& broadcast,
+                                const BroabcastInfo& info,
                                 QObject* parent )
     : QObject ( parent )
+    , _info   ( info   )
 {
     _pub = new ZcmPublish( conf );
 
 #ifdef GUI
-    _scatter = new CustomScatter( 1000, broadcast );
+    _scatter = new CustomScatter( 1000, _info.broadcast_code );
 #endif
 
     _data_timer = new QTimer( this );
     _data_timer->start( conf.main_params.data_freequency );
-
-    _imu_timer = new QTimer( this );
-    _imu_timer->start( conf.main_params.imu_freequency );
-
-    _info_timer = new QTimer( this );
-    _info_timer->start( conf.main_params.info_freequency );
 
     connect( _data_timer, &QTimer::timeout,
              [this]
@@ -31,21 +26,34 @@ LivoxContainer::LivoxContainer( const Config& conf,
 #endif
         emit transmit_packet_pnts( _packs );
 
-        _pub->send_point_cloud( _packs, capture_time );
+        _pub->send_point_cloud( _packs, _capture_time );
 
         _packs.clear();
     } );
 
-    connect( _imu_timer, &QTimer::timeout,
-             [this]
+    //-----------------------------------------------------------------------------------
+
+    if ( _info.dev_type != kDeviceTypeLidarMid40 )
     {
-        _pub->send_imu_data();
-    } );
+        _imu_timer = new QTimer( this );
+        _imu_timer->start( conf.main_params.imu_freequency );
+
+        connect( _imu_timer, &QTimer::timeout,
+                 [this]
+        {
+            _pub->send_imu_data();
+        } );
+    }
+
+    //-----------------------------------------------------------------------------------
+
+    _info_timer = new QTimer( this );
+    _info_timer->start( conf.main_params.info_freequency );
 
     connect( _info_timer, &QTimer::timeout,
              [&]
     {
-        _pub->send_info( _sensor_info, broadcast );
+        _pub->send_info( _sensor_info );
     } );
 }
 //=======================================================================================
@@ -55,7 +63,7 @@ LivoxContainer::LivoxContainer( const Config& conf,
 void LivoxContainer::add_pack( const Pack& data, const int32_t ts )
 {
     _packs.append( data );
-    capture_time = ts;
+    _capture_time = ts;
 }
 //=======================================================================================
 void LivoxContainer::set_imu( const LivoxImuPoint& pnt )

@@ -22,7 +22,7 @@ vbyte_buffer CmdSetMode::encode()
 //=======================================================================================
 std::string CmdSetMode::cat()
 {
-    return vcat( " | lidar_mode: ", int( lidar_mode ) );
+    return vcat( " | lidar_mode: ", int( lidar_mode ) ).str();
 }
 //=======================================================================================
 
@@ -49,7 +49,7 @@ vbyte_buffer AckSetMode::encode()
 //=======================================================================================
 std::string AckSetMode::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -92,7 +92,7 @@ std::string CmdWriteExtrinsicParams::cat()
                  " | yaw: ", float( yaw ),
                  " | x: ", int( x ),
                  " | y: ", int( y ),
-                 " | z: ", int( z ) );
+                 " | z: ", int( z ) ).str();
 }
 //=======================================================================================
 
@@ -119,7 +119,7 @@ vbyte_buffer AckWriteExtrinsicParams::encode()
 //=======================================================================================
 std::string AckWriteExtrinsicParams::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -142,7 +142,7 @@ vbyte_buffer CmdReadExtrinsicParams::encode()
 //=======================================================================================
 std::string CmdReadExtrinsicParams::cat()
 {
-    return vcat();
+    return vcat().str();
 }
 //=======================================================================================
 
@@ -187,7 +187,7 @@ std::string AckReadExtrinsicParams::cat()
                  " | yaw: ", float( yaw ),
                  " | x: ", int( x ),
                  " | y: ", int( y ),
-                 " | z: ", int( z ) );
+                 " | z: ", int( z ) ).str();
 }
 //=======================================================================================
 
@@ -214,7 +214,7 @@ vbyte_buffer CmdWeatherSuppression::encode()
 //=======================================================================================
 std::string CmdWeatherSuppression::cat()
 {
-    return vcat( " | state: ", int( state ) );
+    return vcat( " | state: ", int( state ) ).str();
 }
 //=======================================================================================
 
@@ -241,7 +241,7 @@ vbyte_buffer AckWeatherSuppression::encode()
 //=======================================================================================
 std::string AckWeatherSuppression::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -268,7 +268,7 @@ vbyte_buffer CmdTurnFan::encode()
 //=======================================================================================
 std::string CmdTurnFan::cat()
 {
-    return vcat( " | state: ", int( state ) );
+    return vcat( " | state: ", int( state ) ).str();
 }
 //=======================================================================================
 
@@ -295,7 +295,7 @@ vbyte_buffer AckTurnFan::encode()
 //=======================================================================================
 std::string AckTurnFan::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -318,7 +318,7 @@ vbyte_buffer CmdTurnFanState::encode()
 //=======================================================================================
 std::string CmdTurnFanState::cat()
 {
-    return vcat();
+    return vcat().str();
 }
 //=======================================================================================
 
@@ -345,7 +345,7 @@ vbyte_buffer CmdSetReturnMode::encode()
 //=======================================================================================
 std::string CmdSetReturnMode::cat()
 {
-    return vcat( " | mode: ", int( mode ) );
+    return vcat( " | mode: ", int( mode ) ).str();
 }
 //=======================================================================================
 
@@ -372,7 +372,7 @@ vbyte_buffer AckSetReturnMode::encode()
 //=======================================================================================
 std::string AckSetReturnMode::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -395,7 +395,7 @@ vbyte_buffer CmdGetReturnMode::encode()
 //=======================================================================================
 std::string CmdGetReturnMode::cat()
 {
-    return vcat();
+    return vcat().str();
 }
 //=======================================================================================
 
@@ -425,7 +425,7 @@ vbyte_buffer AckGetReturnMode::encode()
 std::string AckGetReturnMode::cat()
 {
     return vcat( " | ret_code: ", int( ret_code ),
-                 " | mode: ", int( mode ) );
+                 " | mode: ", int( mode ) ).str();
 }
 //=======================================================================================
 
@@ -452,7 +452,7 @@ vbyte_buffer CmdSetImuDataFreequency::encode()
 //=======================================================================================
 std::string CmdSetImuDataFreequency::cat()
 {
-    return vcat( " | frequency: ", int( frequency ) );
+    return vcat( " | frequency: ", int( frequency ) ).str();
 }
 //=======================================================================================
 
@@ -479,7 +479,7 @@ vbyte_buffer AckSetImuDataFreequency::encode()
 //=======================================================================================
 std::string AckSetImuDataFreequency::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================
 
@@ -502,7 +502,7 @@ vbyte_buffer CmdGetImuDataFreequency::encode()
 //=======================================================================================
 std::string CmdGetImuDataFreequency::cat()
 {
-    return vcat();
+    return vcat().str();
 }
 //=======================================================================================
 
@@ -532,7 +532,7 @@ vbyte_buffer AckGetImuDataFreequency::encode()
 std::string AckGetImuDataFreequency::cat()
 {
     return vcat( " | ret_code: ", int( ret_code ),
-                 " | frequency: ", int( frequency ) );
+                 " | frequency: ", int( frequency ) ).str();
 }
 //=======================================================================================
 
@@ -571,7 +571,7 @@ std::string CmdUpdateUTCSync::cat()
                  " | month: ", int( month ),
                  " | day: ", int( day ),
                  " | hour: ", int( hour ),
-                 " | microsecond: ", std::chrono::microseconds( microsecond ) );
+                 " | microsecond: ", std::chrono::microseconds( microsecond ) ).str();
 }
 //=======================================================================================
 
@@ -598,6 +598,6 @@ vbyte_buffer AckUpdateUTCSync::encode()
 //=======================================================================================
 std::string AckUpdateUTCSync::cat()
 {
-    return vcat( " | ret_code: ", int( ret_code ) );
+    return vcat( " | ret_code: ", int( ret_code ) ).str();
 }
 //=======================================================================================

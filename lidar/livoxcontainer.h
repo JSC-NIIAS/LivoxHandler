@@ -24,7 +24,7 @@ class LivoxContainer : public QObject
 public:
 
     explicit LivoxContainer( const Config& conf,
-                             const QString& broadcast = {},
+                             const BroabcastInfo& info,
                              QObject* parent = nullptr );
 
     //-----------------------------------------------------------------------------------
@@ -42,6 +42,8 @@ public slots:
 
 private:
 
+    BroabcastInfo _info;
+
 #ifdef GUI
     CustomScatter *_scatter = nullptr;
 #endif
@@ -53,8 +55,8 @@ private:
     QTimer *_info_timer = nullptr;
 
     QList<Pack> _packs;
-    int32_t capture_time;
-    QList<LivoxImuPoint>   _imu_pnts;
+    int32_t _capture_time;
+    QList<LivoxImuPoint> _imu_pnts;
     LidarStatus _sensor_info;
 
 };

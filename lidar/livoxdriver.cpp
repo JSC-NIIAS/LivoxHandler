@@ -12,7 +12,7 @@ LivoxDriver::LivoxDriver( Config& config,
     , _seq_num  ( info.seq_num  )
     , _dev_type ( info.dev_type )
 {
-    _container = new LivoxContainer( config, _info.broadcast_code, this );
+    _container = new LivoxContainer( config, _info, this );
 
     _seq_num++;
 
@@ -22,11 +22,9 @@ LivoxDriver::LivoxDriver( Config& config,
     connect( this, &LivoxDriver::transmit_info,
              _container, &LivoxContainer::set_info );
 
-    connect( this, &LivoxDriver::transmit_imu,
-             _container, &LivoxContainer::set_imu );
-
-//    connect( _container, &LivoxContainer::transmit_packet_pnts,
-//             this, &LivoxDriver::transmit_packet_pnts );
+    if ( _info.dev_type != kDeviceTypeLidarMid40 )
+        connect( this, &LivoxDriver::transmit_imu,
+                 _container, &LivoxContainer::set_imu );
 
     _init_listen_ports();
     _set_handshake();
@@ -122,8 +120,8 @@ void LivoxDriver::_on_data()
         Package<LivoxSpherPoint> pack;
         pack.decode( &view );
 
-        transmit_point_cloud( convert<Package<LivoxSpherPoint>>( pack ), now );
-        transmit_info( pack.status_code, pack.timestamp );
+        emit transmit_point_cloud( convert<Package<LivoxSpherPoint>>( pack ), now );
+        emit transmit_info( pack.status_code, pack.timestamp );
 
         vdeb << "Receive Point Cloud Data from "
              << _info.broadcast_code
@@ -145,6 +143,7 @@ void LivoxDriver::_init_lidar()
 }
 //=======================================================================================
 
+#include <cstdlib>
 //=======================================================================================
 void LivoxDriver::_set_handshake()
 {
@@ -165,6 +164,7 @@ void LivoxDriver::_set_handshake()
                                             int( dgram.size() ),
                                             _info.address,
                                             livox_port );
+
     if ( sended == int( dgram.size() ) )
         vdeb << "Send Handshake Request to" << _info.broadcast_code;
     else
