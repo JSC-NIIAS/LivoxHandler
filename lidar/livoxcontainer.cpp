@@ -1,7 +1,5 @@
 #include "livoxcontainer.h"
 
-using namespace zcm;
-
 //=======================================================================================
 LivoxContainer::LivoxContainer( const Config& conf,
                                 const BroabcastInfo& info,
@@ -37,7 +35,6 @@ LivoxContainer::LivoxContainer( const Config& conf,
         connect( _imu_timer, &QTimer::timeout,
                  [this]
         {
-            _pub->send_imu_data();
         } );
     }
 
@@ -49,7 +46,6 @@ LivoxContainer::LivoxContainer( const Config& conf,
     connect( _info_timer, &QTimer::timeout,
              [&]
     {
-        _pub->send_info( _sensor_info );
     } );
 }
 //=======================================================================================

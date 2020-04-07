@@ -7,8 +7,8 @@
 #include "vbyte_buffer_view.h"
 
 #include "livox_def.h"
-#include "command_impl.h"
 #include "sdk_protocol.h"
+#include "command_impl.h"
 
 #include <QtGlobal>
 #include <QList>

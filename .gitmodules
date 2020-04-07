@@ -1,0 +1,6 @@
+[submodule "vlibs2"]
+	path = vlibs2
+	url = https://github.com/JSC-NIIAS/vlibs2.git
+[submodule "livox_sdk"]
+	path = livox_sdk
+	url = https://github.com/JSC-NIIAS/livox_sdk.git
