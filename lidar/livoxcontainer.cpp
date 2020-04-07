@@ -9,8 +9,6 @@ LivoxContainer::LivoxContainer( const Config& conf,
     : QObject ( parent )
     , _info   ( info   )
 {
-    _pub = new ZcmPublish( conf );
-
 #ifdef GUI
     _scatter = new CustomScatter( 1000, _info.broadcast_code );
 #endif
@@ -25,8 +23,6 @@ LivoxContainer::LivoxContainer( const Config& conf,
         _scatter->plot_pnts( _packs );
 #endif
         emit transmit_packet_pnts( _packs );
-
-        _pub->send_point_cloud( _packs, _capture_time );
 
         _packs.clear();
     } );

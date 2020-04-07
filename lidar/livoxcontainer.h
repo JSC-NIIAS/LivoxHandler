@@ -9,7 +9,6 @@
 #include "converter.h"
 #include "config.h"
 #include "livoxmessages.h"
-#include "zcmpublish.h"
 
 #include "livox_def.h"
 
@@ -47,8 +46,6 @@ private:
 #ifdef GUI
     CustomScatter *_scatter = nullptr;
 #endif
-
-    ZcmPublish *_pub = nullptr;
 
     QTimer *_data_timer = nullptr;
     QTimer *_imu_timer = nullptr;

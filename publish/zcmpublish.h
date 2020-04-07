@@ -9,17 +9,9 @@
 
 #include "livox_def.h"
 
-#include "ZcmDeviceInfo.hpp"
-#include "ZcmLivoxIMU.hpp"
-#include "PointTag.hpp"
-#include "ZcmLivoxPoint.hpp"
-#include "ZcmLivoxScan.hpp"
-
 #include <QObject>
 #include <QString>
 #include <QtMath>
-
-#include "zcm/zcm-cpp.hpp"
 
 //=======================================================================================
 
